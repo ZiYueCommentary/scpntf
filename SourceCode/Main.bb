@@ -117,6 +117,7 @@ Function GetLocalString$(Section$, Parameter$)
 	If I_Loc\Localized And FileType(I_Loc\LangPath + "Data\local.ini") = 1 Then
 		temp=GetINIString(I_Loc\LangPath + "Data\local.ini", Section, Parameter)
 		If temp <> "" Then
+			l.LocalString = New LocalString
 			l\value = temp
 			l\section = Section
 			l\parameter = Parameter
