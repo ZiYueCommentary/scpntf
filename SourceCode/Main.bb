@@ -70,7 +70,7 @@ Type LocalString
 	Field parameter$
 	Field value$
 End Type
-
+UpdateLang("schinese")
 Function UpdateLang(Lang$)
 	If I_Loc\LangPath <> "" Then ;Only need to delete local and fonts, because this line is only ever called twice in the launcher
 		DeleteINIFile(I_Loc\LangPath + "Data\local.ini")
@@ -89,16 +89,10 @@ Function UpdateLang(Lang$)
 	Next
 	;These are the strings to be cached in order to allow for better framerates.
 	;Order is important, first created is fastest to access.
-	; TODO SetLocalString("Messages", "savecantloc")
 	InitFonts()
 End Function
 
 ;UpdateLang(GetINIString(gv\OptionFile, "options", "pack", "English"))
-If CommandLine() = "" Then 
-	UpdateLang(Steam_GetCurrentGameLang())
-Else 
-	UpdateLang(CommandLine())
-EndIf
 
 Function SetLocalString(Section$, Parameter$)
 	Local l.LocalString = New LocalString
@@ -123,6 +117,9 @@ Function GetLocalString$(Section$, Parameter$)
 	If I_Loc\Localized And FileType(I_Loc\LangPath + "Data\local.ini") = 1 Then
 		temp=GetINIString(I_Loc\LangPath + "Data\local.ini", Section, Parameter)
 		If temp <> "" Then
+			l\value = temp
+			l\section = Section
+			l\parameter = Parameter
 			Return temp
 		EndIf
 	EndIf
