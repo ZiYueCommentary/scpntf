@@ -57,6 +57,18 @@ End Function
 
 SetTickrate(60)
 
+Function IniWriteBuffer%(File$, ClearPrevious% = True)
+	IniWriteBuffer_(File, ClearPrevious)
+End Function
+
+Function IniGetBufferString$(File$, Section$, Parameter$, DefaultValue$ = "")
+	Return IniGetBufferString_(File, Section, Parameter, DefaultValue)
+End Function
+
+Function IniKeyExist%(file$, INI_sSection$, INI_sKey$)
+	Return IniKeyExist_(file, INI_sSection, INI_sKey, True)
+End Function
+
 Type Loc
 	Field Lang$
 	Field LangPath$
@@ -64,12 +76,6 @@ Type Loc
 End Type
 
 Global I_Loc.Loc = New Loc
-
-Type LocalString
-	Field section$
-	Field parameter$
-	Field value$
-End Type
 
 Function UpdateLang(Lang$)
 	If I_Loc\LangPath <> "" Then ;Only need to delete local and fonts, because this line is only ever called twice in the launcher
@@ -84,7 +90,8 @@ Function UpdateLang(Lang$)
 		I_Loc\LangPath = "Localization\" + Lang + "\"
 		I_Loc\Localized = True
 	EndIf
-	Delete Each LocalString
+	IniWriteBuffer("Data\local.ini")
+	IniWriteBuffer(I_Loc\LangPath + "Data\local.ini")
 	;These are the strings to be cached in order to allow for better framerates.
 	;Order is important, first created is fastest to access.
 	; TODO SetLocalString("Messages", "savecantloc")
@@ -94,49 +101,15 @@ End Function
 ;UpdateLang(GetINIString(gv\OptionFile, "options", "pack", "English"))
 UpdateLang(Steam_GetCurrentGameLang())
 
-Function SetLocalString(Section$, Parameter$)
-	Local l.LocalString = New LocalString
-	l\value = GetLocalString(Section, Parameter) ;need to set the value first, otherwise it is being set to itself
-	l\section = Section
-	l\parameter = Parameter
-End Function
-
 ;Returns localized version of a String, if no translation exists, use English
 Function GetLocalString$(Section$, Parameter$)
-	
-	Local l.LocalString
-	For l.LocalString = Each LocalString
-		If l\section = Section And l\parameter = Parameter Then
-			Return l\value
-		EndIf
-	Next
-	; TODO Find out all occassions where this is called every frame
-	;CreateConsoleMsg("Called " + Section + Parameter)
-	
-	Local temp$
-	
-	If I_Loc\Localized And FileType(I_Loc\LangPath + "Data\local.ini") = 1 Then
-		temp=GetINIString(I_Loc\LangPath + "Data\local.ini", Section, Parameter)
-		If temp <> "" Then
-			l.LocalString = New LocalString
-			l\section = Section
-			l\parameter = Parameter
-			l\value = temp
-			Return temp
-		EndIf
+
+	If I_Loc\Localized And IniKeyExist(I_Loc\LangPath + "Data\local.ini", Section, Parameter) Then
+		Return IniGetBufferString(I_Loc\LangPath + "Data\local.ini", Section, Parameter)
 	EndIf
-	
-	temp=GetINIString("Data\local.ini", Section, Parameter)
-	If temp <> "" Then
-		l.LocalString = New LocalString
-		l\section = Section
-		l\parameter = Parameter
-		l\value = temp
-		Return temp
-	EndIf
-	
-	Return Section + "." + Parameter
-	
+
+	Return IniGetBufferString("Data\local.ini", Section, Parameter, Section + "." + Parameter)
+
 End Function
 
 ;With Formatting! %s in a String gets replaced
