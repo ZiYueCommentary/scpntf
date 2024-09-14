@@ -128,10 +128,16 @@ Function UpdateEvent_Checkpoints(e.Events)
 		ElseIf e\room\RoomDoors[CHECKPOINT_ELEVATOR_DOOR_ID]\openstate <> 0.0 And (Not EntityHidden(e\room\Objects[CHECKPOINT_ELEVATOR_FAKE_DOOR_ID])) Then
 			HideEntity(e\room\Objects[CHECKPOINT_ELEVATOR_FAKE_DOOR_ID])
 		EndIf
-		If e\EventState2 = 0 And EntityY(Collider) > 2800.0*RoomScale Lor EntityY(Collider) < -2800.0*RoomScale Then
+		If e\EventState2 = 0 And (EntityY(Collider) > 2800.0*RoomScale Lor EntityY(Collider) < -2800.0*RoomScale) And FallTimer = 0.0 And KillTimer = 0.0 Then
 			e\EventState = e\EventState + (0.01*FPSfactor)
 			EntityAlpha e\room\Objects[CHECKPOINT_DARK_SPRITE_ID],Min(e\EventState,1.0)
 			If e\EventState > 1.05 Then
+				If Curr106 <> Null Then
+					If (Not Contained106) And Curr106\State <= 0 Then
+						Curr106\State = Rand(22000, 27000)
+						PositionEntity Curr106\Collider,0,500,0
+					EndIf
+				EndIf
 				SaveGame(SavePath + CurrSave\Name + "\")
 				prevZone = NTF_CurrZone
 				For ne = Each NewElevator
@@ -255,6 +261,22 @@ Function UpdateEvent_Checkpoints(e.Events)
 				e\EventState2 = 0
 			EndIf
 		EndIf
+	EndIf
+	
+	If (Not PlayerInReachableRoom()) Then
+		For ne = Each NewElevator
+			If PlayerNewElevator = ne\ID And ne\room = e\room Then
+				Select NTF_CurrZone
+					Case EZ
+						ResetNewElevator(ne, 3)
+					Case LCZ
+						ResetNewElevator(ne, 2)
+					Case HCZ
+						ResetNewElevator(ne, 1)
+				End Select
+				Exit
+			EndIf
+		Next
 	EndIf
 	
 End Function

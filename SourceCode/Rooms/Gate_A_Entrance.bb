@@ -76,6 +76,7 @@ Function UpdateEvent_Gate_A_Entrance(e.Events)
 				n\EnemyZ = EntityZ(n\Collider)
 				PointEntity(n\Collider,e\room\RoomDoors[1]\frameobj)
 				SetNPCFrame(n,Rand(962, 1259))
+				n\NPCRoom = e\room
 			Next
 			
 			e\room\NPC[1]\texture = "GFX\npcs\MTF_newdiffuse_medic.jpg"
@@ -83,8 +84,6 @@ Function UpdateEvent_Gate_A_Entrance(e.Events)
 			TextureBlend(tex,5)
 			EntityTexture(e\room\NPC[1]\obj, tex)
 			DeleteSingleTextureEntryFromCache tex
-			
-			MTFtimer = 1.0
 			
 			Curr106\Idle = True
 			Curr173\Idle = SCP173_DISABLED
@@ -181,6 +180,7 @@ Function UpdateEvent_Gate_A_Entrance(e.Events)
 			OpenCloseDoor(e\room\RoomDoors[1])
 			e\EventState = 3
 			PlayAnnouncement("SFX\Character\MTF\Announc.ogg")
+			MTFtimer = 1.0
 			e\room\NPC[0]\IdleTimer = 70*15
 			e\room\NPC[0]\State = MTF_SEARCH
 			e\room\NPC[1]\IdleTimer = 70*17

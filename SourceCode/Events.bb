@@ -65,7 +65,7 @@ Function CreateEvent.Events(eventname$, roomname$, id%, prob# = 0.0)
 					If e2\room = r Then temp = True : Exit
 				Next
 				
-				If Rnd(0.0, 1.0) < prob And temp = False Then
+				If Rnd(0.0, 1.0) <= prob And temp = False Then
 					e.Events = New Events
 					e\EventName = eventname
 					e\room = r
@@ -157,8 +157,11 @@ Function InitEvents()
 	
 	;the dead guard
 	CreateEvent("room3_tunnel","room3_tunnel", 0, 0.2)
+	CreateEvent("cont_513","cont_513", 0)
 	
-	CreateEvent("room4_1","room4_1", 0)
+	If gopt\GameMode = GAMEMODE_DEFAULT Then
+		CreateEvent("room4_1","room4_1", 0)
+	EndIf
 	
 	If Rand(5)<5 Then
 		Select Rand(3)
@@ -385,6 +388,8 @@ Function UpdateEvents()
 				UpdateEvent_Cont_457(e)
 			Case "cont_500_1499"
 				UpdateEvent_Cont_500_1499(e)
+			Case "cont_513"
+				UpdateEvent_Cont_513(e)
 			Case "cont_895","cont_895_106_spawn"
 				UpdateEvent_Cont_895(e)
 			Case "cont_914"

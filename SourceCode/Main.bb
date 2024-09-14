@@ -1,5 +1,6 @@
 
 Include "SourceCode\Math.bb"
+Include "SourceCode\IniControler.bb"
 
 Type FixedTimesteps
 	Field tickDuration#
@@ -65,17 +66,8 @@ End Type
 
 Global I_Loc.Loc = New Loc
 
-Type LocalString
-	Field section$
-	Field parameter$
-	Field value$
-End Type
-UpdateLang("schinese")
 Function UpdateLang(Lang$)
-	If I_Loc\LangPath <> "" Then ;Only need to delete local and fonts, because this line is only ever called twice in the launcher
-		DeleteINIFile(I_Loc\LangPath + "Data\local.ini")
-	EndIf
-	If Lang = "English" Then
+	If Lang = "english" Then
 		I_Loc\Lang = ""
 		I_Loc\LangPath = ""
 		I_Loc\Localized = False
@@ -83,71 +75,29 @@ Function UpdateLang(Lang$)
 		I_Loc\Lang = Lang
 		I_Loc\LangPath = "Localization\" + Lang + "\"
 		I_Loc\Localized = True
+		IniWriteBuffer(I_Loc\LangPath + "Data\local.ini", 1)
 	EndIf
-	For l.LocalString = Each LocalString
-		Delete l
-	Next
-	;These are the strings to be cached in order to allow for better framerates.
-	;Order is important, first created is fastest to access.
+	IniWriteBuffer("Data\local.ini", 1)
 	InitFonts()
 End Function
 
-;UpdateLang(GetINIString(gv\OptionFile, "options", "pack", "English"))
+UpdateLang(Steam_GetCurrentGameLang())
 
 Function SetLocalString(Section$, Parameter$)
-	Local l.LocalString = New LocalString
-	l\value = GetLocalString(Section, Parameter) ;need to set the value first, otherwise it is being set to itself
-	l\section = Section
-	l\parameter = Parameter
+	IniWriteString(I_Loc\LangPath + "Data\local.ini", Section, Parameter, GetLocalString(Section, Parameter), 1) ;need to set the value first, otherwise it is being set to itself
 End Function
 
 ;Returns localized version of a String, if no translation exists, use English
 Function GetLocalString$(Section$, Parameter$)
-	
-	For l.LocalString = Each LocalString
-		If l\section = Section And l\parameter = Parameter Then
-			Return l\value
-		EndIf
-	Next
-	; TODO Find out all occassions where this is called every frame
-	;CreateConsoleMsg("Called " + Section + Parameter)
-	
-	Local temp$
-	
-	If I_Loc\Localized And FileType(I_Loc\LangPath + "Data\local.ini") = 1 Then
-		temp=GetINIString(I_Loc\LangPath + "Data\local.ini", Section, Parameter)
-		If temp <> "" Then
-			l.LocalString = New LocalString
-			l\value = temp
-			l\section = Section
-			l\parameter = Parameter
-			Return temp
-		EndIf
-	EndIf
-	
-	temp=GetINIString("Data\local.ini", Section, Parameter)
-	If temp <> "" Then
-		Return temp
-	EndIf
-	
-	Return Section + "." + Parameter
-	
+	Return IniGetBufferString(I_Loc\LangPath + "Data\local.ini", Section, Parameter, IniGetBufferString("Data\local.ini", Section, Parameter, Section + "." + Parameter))
 End Function
 
 ;With Formatting! %s in a String gets replaced
 Function GetLocalStringR$(Section$, Parameter$, Replace$)
-	
 	Return Replace(GetLocalString(Section, Parameter), "%s", Replace)
-	
 End Function
 
-;Include "SourceCode\FMod.bb"
-
-;Include "SourceCode\resourcepacks.bb"
-;InitResourcePacks()
-
 Include "SourceCode\StrictLoads.bb"
-;Include "SourceCode\fullscreen_window_fix.bb"
 Include "SourceCode\KeyName.bb"
 Include "SourceCode\KeyBinds.bb"
 
@@ -175,9 +125,6 @@ Type Fonts
 End Type
 
 InitController()
-
-Const VersionNumber$ = "0.2.9"
-Const CompatibleNumber$ = "0.2.8"
 
 Global MenuWhite%, MenuBlack%
 Global ButtonSFX% = LoadSound_Strict("SFX\Interact\Button.ogg")
@@ -289,7 +236,7 @@ Global GameSaved%
 
 Global CanSave% = True
 
-AppTitle "SCP: Nine-Tailed Fox v"+VersionNumber
+AppTitle AppTitleMain
 Delay 100
 ;---------------------------------------------------------------------------------------------------------------------
 
@@ -308,6 +255,8 @@ InitFonts()
 Global CreditsFont%,CreditsFont2%
 
 Global BlinkMeterIMG% = LoadImage_Strict("GFX\blinkmeter.jpg")
+
+ShowDisclaimers()
 
 DrawLoading(0, True)
 
@@ -370,7 +319,6 @@ Global RefinedItems%
 Global DropSpeed#, HeadDropSpeed#, CurrSpeed#
 Global user_camera_pitch#, side#
 Global Crouch%, CrouchState#
-Global Speed# = 0.018
 
 Global PlayerZone%, PlayerRoom.Rooms
 
@@ -459,8 +407,6 @@ Global DebugHUD%
 Global BlurVolume#, BlurTimer#
 
 Global LightBlink#, LightFlash#
-
-Global DamageMultiplier# = 1.0
 
 Global BumpEnabled% = GetINIInt(gv\OptionFile, "options", "bump mapping enabled", 1)
 Global HUDenabled% = GetINIInt(gv\OptionFile, "options", "HUD enabled", 1)
@@ -679,9 +625,6 @@ Global MonitorTimer# = 0.0, MonitorTimer2# = 0.0, UpdateCheckpoint1%, UpdateChec
 Global PlayerDetected%
 ;Global PrevInjuries#,PrevBloodloss#
 Global NoTarget% = False
-Global NoBlink% = False
-Global InfiniteAmmo% = False
-Global InstantKill% = False
 
 Global NVGImages = LoadAnimImage("GFX\battery.png",64,64,0,2)
 MaskImage NVGImages,255,0,255
@@ -719,11 +662,6 @@ Global IsZombie% = False
 Global room2gw_brokendoor% = False
 Global room2gw_x# = 0.0
 Global room2gw_z# = 0.0
-
-Global Menu_TestIMG
-Global menuroomscale# = 8.0 / 2048.0
-
-Global CurrMenu_TestIMG$ = ""
 
 Global ParticleAmount% = GetINIInt(gv\OptionFile,"options","particle amount", 2)
 
@@ -912,6 +850,7 @@ LoopDelay = MilliSecs()
 Global CurrTrisAmount%
 
 Global Input_ResetTime# = 0.0
+Global MousePosX#, MousePosY#
 
 Type SCP427
 	Field Using%
@@ -919,13 +858,6 @@ Type SCP427
 	Field Sound[2]
 	Field SoundCHN[2]
 End Type
-
-InitErrorMsgs(9)
-SetErrorMsg(0, "An error occured in SCP: Nine Tailed Fox Mod v"+VersionNumber+Chr(10)+"Save compatible version: "+CompatibleNumber+". Engine version: "+SystemProperty("blitzversion"))
-SetErrorMsg(1, "OS: "+SystemProperty("os")+" "+gv\OSBit+" bit (Build: "+SystemProperty("osbuild")+")")
-SetErrorMsg(2, "CPU: "+Trim(SystemProperty("cpuname"))+" (Arch: "+SystemProperty("cpuarch")+", "+GetEnv("NUMBER_OF_PROCESSORS")+" Threads)")
-
-SetErrorMsg(8, Chr(10)+"Please take a screenshot of this error and send it to us!")
 
 ;----------------------------------------------------------------------------------------------------------------------------------------------------
 ;----------------------------------------------       		MAIN LOOP                 ---------------------------------------------------------------
@@ -939,22 +871,23 @@ Function GlobalGameLoop()
 	Repeat
 		Local CurrDelta% = MilliSecs()
 		
-		SetErrorMsg(3, "GPU: "+GfxDriverName(CountGfxDrivers())+" ("+((TotalVidMem()/1024)-(AvailVidMem()/1024))+" MB/"+(TotalVidMem()/1024)+" MB)")
-		SetErrorMsg(4, "Triangles rendered: "+CurrTrisAmount+", Active textures: "+ActiveTextures()+Chr(10))
+		SetErrorMsg(2, "RAM: "+((TotalPhys()/1024)-(AvailPhys()/1024))+" MB/"+(TotalPhys()/1024)+" MB (Usage: "+MemoryLoad()+"%)")
+		SetErrorMsg(4, "GPU: "+GfxDriverName(CountGfxDrivers())+" ("+((TotalVidMem()/1024)-(AvailVidMem()/1024))+" MB/"+(TotalVidMem()/1024)+" MB)")
+		SetErrorMsg(5, "Triangles rendered: "+CurrTrisAmount+", Active textures: "+ActiveTextures()+Chr(10))
 		If gopt\GameMode <> GAMEMODE_MULTIPLAYER Then
 			If PlayerRoom <> Null Then
-				SetErrorMsg(5, "Map seed: "+RandomSeed + ", Room: " + PlayerRoom\RoomTemplate\Name+" (" + Floor(EntityX(PlayerRoom\obj) / 8.0 + 0.5) + ", " + Floor(EntityZ(PlayerRoom\obj) / 8.0 + 0.5) + ", angle: "+PlayerRoom\angle + ")")
+				SetErrorMsg(6, "Map seed: "+RandomSeed + ", Room: " + PlayerRoom\RoomTemplate\Name+" (" + Floor(EntityX(PlayerRoom\obj) / 8.0 + 0.5) + ", " + Floor(EntityZ(PlayerRoom\obj) / 8.0 + 0.5) + ", angle: "+PlayerRoom\angle + ")")
 				
 				For ev.Events = Each Events
 					If ev\room = PlayerRoom Then
-						SetErrorMsg(6, "Room event: "+ev\EventName+" (" +ev\EventState+", "+ev\EventState2+", "+ev\EventState3+")"+Chr(10))
+						SetErrorMsg(7, "Room event: "+ev\EventName+" (" +ev\EventState+", "+ev\EventState2+", "+ev\EventState3+")"+Chr(10))
 						Exit
 					EndIf
 				Next
 			EndIf
 		ElseIf gopt\GameMode = GAMEMODE_MULTIPLAYER Then
-			SetErrorMsg(5, "Map: "+mp_I\MapInList\Name)
-			SetErrorMsg(6, "Gamemode: "+mp_I\Gamemode\name+Chr(10))
+			SetErrorMsg(6, "Map: "+mp_I\MapInList\Name)
+			SetErrorMsg(7, "Gamemode: "+mp_I\Gamemode\name+Chr(10))
 		EndIf
 		
 		CatchErrors("Global main loop")
@@ -1007,6 +940,9 @@ Function GlobalGameLoop()
 		;Text 700, 110, "Phys. Memory: "+((TotalPhys()/1024)-(AvailPhys()/1024))+" MB/"+(TotalPhys()/1024)+" MB ("+(TotalPhys()-AvailPhys())+" KB/"+TotalPhys()+" KB). CPU Usage: "+MemoryLoad()+"%"
 		;Text 700, 130, "Virtual Memory: "+((TotalVirtual()/1024)-(AvailVirtual()/1024))+" MB/"+(TotalVirtual()/1024)+" MB ("+(TotalVirtual()-AvailVirtual())+" KB/"+TotalVirtual()+" KB)"
 		;Text 700, 150, "Video Memory: "+((TotalVidMem()/1024)-(AvailVidMem()/1024))+" MB/"+(TotalVidMem()/1024)+" MB ("+(TotalVidMem()-AvailVidMem())+" KB/"+TotalVidMem()+" KB)"
+		If HUDenabled And BuildMessage <> "" Then 
+			Text(GraphicsWidth()-StringWidth(BuildMessage)-4, GraphicsHeight()-StringHeight(BuildMessage)-4, BuildMessage)
+		EndIf
 		
 		Steam_Update()
 		UpdateRichPresence()
@@ -1038,6 +974,9 @@ Function MainLoop()
 		If ConsoleOpen Lor InvOpen
 			FPSfactor=0.0
 		EndIf
+		
+		MousePosX = MouseX()
+		MousePosY = MouseY()
 		
 		If Input_ResetTime > 0 And FPSfactor > 0.0 Then
 			Input_ResetTime = Max(Input_ResetTime - FPSfactor, 0.0)
@@ -1293,7 +1232,6 @@ Function MainLoop()
 			EndIf
 			MouseLook()
 			MovePlayer()
-			UpdateNightVision()
 			InFacility = CheckForPlayerInFacility()
 			UpdateDoors()
 			UpdateScreens()
@@ -1359,24 +1297,26 @@ Function MainLoop()
 			ElseIf PlayerRoom\RoomTemplate\Name = "gate_a_topside" Lor PlayerRoom\RoomTemplate\Name = "gate_a_intro" Lor PlayerRoom\RoomTemplate\Name = "gate_b_topside" Then
 				CurrFogColor = FogColor_Outside
 			ElseIf PlayerRoom\RoomTemplate\Name = "pocketdimension" Then
-				CurrFogColor = FogColor_PD
+				;PD sets the fog customly in the UpdateEvent code
+				CurrFogColor = ""
+			Else
+				Select NTF_CurrZone
+					Case LCZ
+						CurrFogColor = FogColor_LCZ
+					Case HCZ
+						CurrFogColor = FogColor_HCZ
+					Case EZ
+						CurrFogColor = FogColor_EZ
+				End Select
 			EndIf
 		EndIf
-		If CurrFogColor = "" Then
-			Select NTF_CurrZone
-				Case LCZ
-					CurrFogColor = FogColor_LCZ
-				Case HCZ
-					CurrFogColor = FogColor_HCZ
-				Case EZ
-					CurrFogColor = FogColor_EZ
-			End Select
+		If CurrFogColor <> "" Then
+			Local FogColorR% = Left(CurrFogColor,3)
+			Local FogColorG% = Mid(CurrFogColor,4,3)
+			Local FogColorB% = Right(CurrFogColor,3)
+			CameraFogColor Camera,FogColorR,FogColorG,FogColorB
+			CameraClsColor Camera,FogColorR,FogColorG,FogColorB
 		EndIf
-		Local FogColorR% = Left(CurrFogColor,3)
-		Local FogColorG% = Mid(CurrFogColor,4,3)
-		Local FogColorB% = Right(CurrFogColor,3)
-		CameraFogColor Camera,FogColorR,FogColorG,FogColorB
-		CameraClsColor Camera,FogColorR,FogColorG,FogColorB
 		
 		If InfiniteStamina% Then Stamina = Min(100, Stamina + (100.0-Stamina)*0.01*FPSfactor)
 		
@@ -1668,11 +1608,7 @@ Function MainLoop()
 		EndIf
 	EndIf
 	
-	Color 255, 255, 255
-	SetFont fo\ConsoleFont
-	If opt\ShowFPS Then
-		Text 20, 20, "FPS: " + ft\fps : SetFont fo\Font[Font_Default]
-	EndIf
+	ShowStats()
 	
 	DrawQuickLoading()
 	
@@ -1703,47 +1639,47 @@ Function QuickLoadEvents()
 	Select e\EventName
 		Case "surveil_room"
 			;[Block]
-			If e\EventState = 0 And e\EventStr <> ""
-				If e\EventStr <> "" And Left(e\EventStr,4) <> "load"
-					QuickLoadPercent = QuickLoadPercent + 5
-					If Int(e\EventStr) > 9
-						e\EventStr = "load2"
-					Else
-						e\EventStr = Int(e\EventStr) + 1
-					EndIf
-				ElseIf e\EventStr = "load2"
-					Local skip = False
-					If e\room\NPC[0]=Null Then
-						For n.NPCs = Each NPCs
-							If n\NPCtype = NPCtype049
-								skip = True
-								Exit
-							EndIf
-						Next
-						
-						If (Not skip)
-							e\room\NPC[0] = CreateNPC(NPCtype049,EntityX(e\room\Objects[7],True),EntityY(e\room\Objects[7],True)+5,EntityZ(e\room\Objects[7],True))
-							e\room\NPC[0]\HideFromNVG = True
-							PositionEntity e\room\NPC[0]\Collider,EntityX(e\room\Objects[7],True),EntityY(e\room\Objects[7],True)+5,EntityZ(e\room\Objects[7],True)
-							ResetEntity e\room\NPC[0]\Collider
-							RotateEntity e\room\NPC[0]\Collider,0,e\room\angle+180,0
-							e\room\NPC[0]\State = 0
-							e\room\NPC[0]\PrevState = 2
-							
-							DebugLog(EntityX(e\room\Objects[7],True)+", "+EntityY(e\room\Objects[7],True)+", "+EntityZ(e\room\Objects[7],True))
-						Else
-							DebugLog "Skipped 049 spawning in room2sl"
-						EndIf
-					EndIf
-					QuickLoadPercent = 80
-					e\EventStr = "load3"
-				ElseIf e\EventStr = "load3"
-					e\EventState = 1
-					If e\EventState2 = 0 Then e\EventState2 = -(70*5)
-					
-					QuickLoadPercent = 100
-				EndIf
-			EndIf
+;			If e\EventState = 0 And e\EventStr <> ""
+;				If e\EventStr <> "" And Left(e\EventStr,4) <> "load"
+;					QuickLoadPercent = QuickLoadPercent + 5
+;					If Int(e\EventStr) > 9
+;						e\EventStr = "load2"
+;					Else
+;						e\EventStr = Int(e\EventStr) + 1
+;					EndIf
+;				ElseIf e\EventStr = "load2"
+;					Local skip = False
+;					If e\room\NPC[0]=Null Then
+;						For n.NPCs = Each NPCs
+;							If n\NPCtype = NPCtype049
+;								skip = True
+;								Exit
+;							EndIf
+;						Next
+;						
+;						If (Not skip)
+;							e\room\NPC[0] = CreateNPC(NPCtype049,EntityX(e\room\Objects[7],True),EntityY(e\room\Objects[7],True)+5,EntityZ(e\room\Objects[7],True))
+;							e\room\NPC[0]\HideFromNVG = True
+;							PositionEntity e\room\NPC[0]\Collider,EntityX(e\room\Objects[7],True),EntityY(e\room\Objects[7],True)+5,EntityZ(e\room\Objects[7],True)
+;							ResetEntity e\room\NPC[0]\Collider
+;							RotateEntity e\room\NPC[0]\Collider,0,e\room\angle+180,0
+;							e\room\NPC[0]\State = 0
+;							e\room\NPC[0]\PrevState = 2
+;							
+;							DebugLog(EntityX(e\room\Objects[7],True)+", "+EntityY(e\room\Objects[7],True)+", "+EntityZ(e\room\Objects[7],True))
+;						Else
+;							DebugLog "Skipped 049 spawning in room2sl"
+;						EndIf
+;					EndIf
+;					QuickLoadPercent = 80
+;					e\EventStr = "load3"
+;				ElseIf e\EventStr = "load3"
+;					e\EventState = 1
+;					If e\EventState2 = 0 Then e\EventState2 = -(70*5)
+;					
+;					QuickLoadPercent = 100
+;				EndIf
+;			EndIf
 			;[End Block]
 		Case "room2_closets"
 			;[Block]
@@ -1842,44 +1778,40 @@ Function QuickLoadEvents()
 			;[End Block]
 		Case "cont_205"
 			;[Block]
-			If e\EventState=0 Lor e\room\Objects[0]=0 Then
-				If e\EventStr = "load0"
-					e\room\Objects[3] = LoadAnimMesh_Strict("GFX\npcs\205_demon1.b3d")
-					QuickLoadPercent = 10
-					e\EventStr = "load1"
-				ElseIf e\EventStr = "load1"
-					e\room\Objects[4] = LoadAnimMesh_Strict("GFX\npcs\205_demon2.b3d")
-					QuickLoadPercent = 20
-					e\EventStr = "load2"
-				ElseIf e\EventStr = "load2"
-					e\room\Objects[5] = LoadAnimMesh_Strict("GFX\npcs\205_demon3.b3d")
-					QuickLoadPercent = 30
-					e\EventStr = "load3"
-				ElseIf e\EventStr = "load3"
-					e\room\Objects[6] = LoadAnimMesh_Strict("GFX\npcs\205_woman.b3d")
-					QuickLoadPercent = 40
-					e\EventStr = "load4"
-				ElseIf e\EventStr = "load4"
-					QuickLoadPercent = 50
-					e\EventStr = "load5"
-				ElseIf e\EventStr = "load5"
-					For i = 3 To 6
-						PositionEntity e\room\Objects[i], EntityX(e\room\Objects[0],True), EntityY(e\room\Objects[0],True), EntityZ(e\room\Objects[0],True), True
-						RotateEntity e\room\Objects[i], -90, EntityYaw(e\room\Objects[0],True), 0, True
-						ScaleEntity(e\room\Objects[i], 0.05, 0.05, 0.05, True)
-					Next
-					QuickLoadPercent = 70
-					e\EventStr = "load6"
-				ElseIf e\EventStr = "load6"
-						;GiveAchievement(Achv205)
-					
-					HideEntity(e\room\Objects[3])
-					HideEntity(e\room\Objects[4])
-					HideEntity(e\room\Objects[5])
-					QuickLoadPercent = 100
-					e\EventStr = "loaddone"
-						;e\EventState = 1
-				EndIf
+			If e\EventStr = "load0"
+				e\room\Objects[3] = LoadAnimMesh_Strict("GFX\npcs\205_demon1.b3d")
+				QuickLoadPercent = 10
+				e\EventStr = "load1"
+			ElseIf e\EventStr = "load1"
+				e\room\Objects[4] = LoadAnimMesh_Strict("GFX\npcs\205_demon2.b3d")
+				QuickLoadPercent = 20
+				e\EventStr = "load2"
+			ElseIf e\EventStr = "load2"
+				e\room\Objects[5] = LoadAnimMesh_Strict("GFX\npcs\205_demon3.b3d")
+				QuickLoadPercent = 30
+				e\EventStr = "load3"
+			ElseIf e\EventStr = "load3"
+				e\room\Objects[6] = LoadAnimMesh_Strict("GFX\npcs\205_woman.b3d")
+				QuickLoadPercent = 40
+				e\EventStr = "load4"
+			ElseIf e\EventStr = "load4"
+				QuickLoadPercent = 50
+				e\EventStr = "load5"
+			ElseIf e\EventStr = "load5"
+				For i = 3 To 6
+					PositionEntity e\room\Objects[i], EntityX(e\room\Objects[0],True), EntityY(e\room\Objects[0],True), EntityZ(e\room\Objects[0],True), True
+					RotateEntity e\room\Objects[i], -90, EntityYaw(e\room\Objects[0],True), 0, True
+					ScaleEntity(e\room\Objects[i], 0.05, 0.05, 0.05, True)
+				Next
+				QuickLoadPercent = 70
+				e\EventStr = "load6"
+			ElseIf e\EventStr = "load6"
+				HideEntity(e\room\Objects[3])
+				HideEntity(e\room\Objects[4])
+				HideEntity(e\room\Objects[5])
+				HideEntity(e\room\Objects[6])
+				QuickLoadPercent = 100
+				e\EventStr = "loaddone"
 			EndIf
 			;[End Block]
 		Case "testroom_860"
@@ -2271,7 +2203,7 @@ End Function
 
 Function InitCredits()
 	Local cl.CreditsLine, d.Doors
-	Local file% = OpenFile_Strict("Credits.txt")
+	Local file% = OpenFile("Credits.txt")
 	Local l$, i%
 	
 	CreditsFont% = LoadFont_Strict("GFX\font\Courier New.ttf", Int(21 * (opt\GraphicHeight / 1024.0)))
@@ -2476,6 +2408,7 @@ Function UpdateCredits()
 	
 End Function
 
+;TODO: Make SaveMSG type and include width and height fields. Calculate them during SaveMSG creation.
 Function SetSaveMSG(txt$)
 	
 	Save_MSG = txt
@@ -2486,11 +2419,7 @@ End Function
 
 Function UpdateSaveMSG()
 	Local scale# = opt\GraphicHeight/768.0
-	;Local width% = 200*scale
-	Local width = StringWidth(Save_MSG)+20*scale
 	Local height% = 30*scale
-	Local x% = (opt\GraphicWidth/2)-(width/2)
-	Local y% = (-height)+Save_MSG_Y
 	
 	If Save_MSG <> ""
 		If Save_MSG_Timer < 70*5
@@ -2513,8 +2442,7 @@ End Function
 
 Function RenderSaveMSG()
 	Local scale# = opt\GraphicHeight/768.0
-	;Local width% = 200*scale
-	Local width = StringWidth(Save_MSG)+20*scale
+	Local width% = StringWidth(Save_MSG)+20*scale
 	Local height% = 30*scale
 	Local x% = (opt\GraphicWidth/2)-(width/2)
 	Local y% = (-height)+Save_MSG_Y
@@ -2532,14 +2460,12 @@ End Function
 
 Function MovePlayer()
 	CatchErrors("Uncaught (MovePlayer)")
-	Local Sprint# = 1.0, i%, angle#
+	Local Sprint# = 1.0, Speed# = 0.018, i%, angle#
 	
 	;IsPlayerSprinting% = False
 	
 	If SuperMan Then
-		If Speed = 0.018 Then
-			Speed = Speed * 3
-		EndIf
+		Speed = Speed * 3
 		
 		SuperManTimer=SuperManTimer+FPSfactor
 		
@@ -2554,7 +2480,7 @@ Function MovePlayer()
 			BlurTimer = 500		
 			HideEntity Fog
 		EndIf
-	EndIf
+	End If
 	
 	If DeathTimer > 0 Then
 		DeathTimer=DeathTimer-FPSfactor
@@ -2871,7 +2797,9 @@ Function MovePlayer()
 		
 		Local CollidedFloor% = False
 		For i = 1 To CountCollisions(Collider)
-			If CollisionY(Collider, i) < EntityY(Collider) - 0.25 Then CollidedFloor = True
+			If CollisionY(Collider, i) < EntityY(Collider) - 0.25 Then 
+				CollidedFloor = True
+			EndIf
 		Next
 		
 		If CollidedFloor = True Then
@@ -2889,21 +2817,12 @@ Function MovePlayer()
 			EndIf
 			DropSpeed# = 0
 		Else
-			;DropSpeed# = Min(Max(DropSpeed - 0.006 * FPSfactor, -2.0), 0.0)
-			If PlayerFallingPickDistance#<>0.0
-				Local pick = LinePick(EntityX(Collider),EntityY(Collider),EntityZ(Collider),0,-PlayerFallingPickDistance,0)
-				If pick
-					DropSpeed# = Min(Max(DropSpeed - 0.006 * FPSfactor, -2.0), 0.0)
-				Else
-					DropSpeed# = 0
-				EndIf
-			Else
-				DropSpeed# = Min(Max(DropSpeed - 0.006 * FPSfactor, -2.0), 0.0)
-			EndIf
+			DropSpeed# = Min(Max(DropSpeed - 0.006 * FPSfactor, -2.0), 0.0)
 		EndIf
-		PlayerFallingPickDistance# = 10.0
 		
-		If (Not UnableToMove%) And ShouldEntitiesFall Then TranslateEntity Collider, 0, DropSpeed * FPSfactor, 0
+		If (Not UnableToMove%) And ShouldEntitiesFall Then 
+			TranslateEntity Collider, 0, DropSpeed * FPSfactor, 0
+		EndIf
 	EndIf
 	
 	ForceMove = False
@@ -3360,7 +3279,7 @@ Function LoadEntities()
 	FogTexture = LoadTexture_Strict("GFX\fog.jpg",1,2)
 	
 	Fog = CreateSprite(ark_blur_cam)
-	ScaleSprite(Fog, 1.0, Float(opt\GraphicHeight)/Float(opt\GraphicWidth))
+	ScaleSprite(Fog, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(Fog, FogTexture)
 	EntityBlend (Fog, 2)
 	EntityOrder Fog, -1000
@@ -3368,7 +3287,7 @@ Function LoadEntities()
 	
 	GasMaskTexture = LoadTexture_Strict("GFX\GasmaskOverlay2.jpg", 1)
 	GasMaskOverlay = CreateSprite(ark_blur_cam)
-	ScaleSprite(GasMaskOverlay, Max(opt\GraphicWidth / 1024.0, 1.0), Max(opt\GraphicHeight / 1024.0 * 0.8, 0.8))
+	ScaleSprite(GasMaskOverlay, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(GasMaskOverlay, GasMaskTexture)
 	EntityBlend (GasMaskOverlay, 2)
 	EntityFX(GasMaskOverlay, 1)
@@ -3378,7 +3297,7 @@ Function LoadEntities()
 	
 	InfectTexture = LoadTexture_Strict("GFX\InfectOverlay.jpg",1,2)
 	InfectOverlay = CreateSprite(ark_blur_cam)
-	ScaleSprite(InfectOverlay, 1.0,Float(opt\GraphicHeight)/Float(opt\GraphicWidth))
+	ScaleSprite(InfectOverlay, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(InfectOverlay, InfectTexture)
 	EntityBlend (InfectOverlay, 3)
 	EntityFX(InfectOverlay, 1)
@@ -3388,7 +3307,7 @@ Function LoadEntities()
 	
 	NVTexture = LoadTexture_Strict("GFX\NightVisionOverlay.jpg", 1)
 	NVOverlay = CreateSprite(ark_blur_cam)
-	ScaleSprite(NVOverlay, Max(GraphicWidth / 1024.0, 1.0), Max(GraphicHeight / 1024.0 * 0.8, 0.8))
+	ScaleSprite(NVOverlay, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(NVOverlay, NVTexture)
 	EntityBlend (NVOverlay, 2)
 	EntityFX(NVOverlay, 1)
@@ -3396,7 +3315,7 @@ Function LoadEntities()
 	MoveEntity(NVOverlay, 0, 0, 1.0)
 	HideEntity(NVOverlay)
 	NVBlink = CreateSprite(ark_blur_cam)
-	ScaleSprite(NVBlink, Max(GraphicWidth / 1024.0, 1.0), Max(GraphicHeight / 1024.0 * 0.8, 0.8))
+	ScaleSprite(NVBlink, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityColor(NVBlink,0,0,0)
 	EntityFX(NVBlink, 1)
 	EntityOrder NVBlink, -1005
@@ -3414,7 +3333,7 @@ Function LoadEntities()
 	Cls
 	SetBuffer BackBuffer()
 	Dark = CreateSprite(ark_blur_cam)
-	ScaleSprite(Dark, 1.0, Float(opt\GraphicHeight)/Float(opt\GraphicWidth))
+	ScaleSprite(Dark, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(Dark, DarkTexture)
 	EntityBlend (Dark, 1)
 	EntityOrder Dark, -1002
@@ -3429,7 +3348,7 @@ Function LoadEntities()
 	ClsColor 0, 0, 0
 	SetBuffer BackBuffer()
 	Light = CreateSprite(ark_blur_cam)
-	ScaleSprite(Light, 1.0, Float(opt\GraphicHeight)/Float(opt\GraphicWidth))
+	ScaleSprite(Light, 1.0, Float(opt\GraphicHeight) / Float(opt\GraphicWidth))
 	EntityTexture(Light, LightTexture)
 	EntityBlend (Light, 1)
 	EntityOrder Light, -1002
@@ -3810,7 +3729,7 @@ Function InitNewGame()
 					PlayerRoom = r
 				EndIf
 			Case 5
-				If r\RoomTemplate\Name = "area_076"
+				If r\RoomTemplate\Name = "testmap"
 					PositionEntity (Collider, EntityX(r\obj), 0.5, EntityZ(r\obj))
 					PlayerRoom = r
 				EndIf
@@ -3955,7 +3874,6 @@ Function NullGame(nomenuload%=False,playbuttonsfx%=True)
 	Local i%, x%, y%, lvl
 	Local itt.ItemTemplates, s.Screens
 	Local rt.RoomTemplates
-	Local g.Guns
 	
 	Local PlayerRoomName$ = PlayerRoom\RoomTemplate\Name
 	Local PlayerRoomZone = NTF_CurrZone
@@ -4030,20 +3948,8 @@ Function NullGame(nomenuload%=False,playbuttonsfx%=True)
 	Shake = 0
 	LightFlash = 0
 	
-	Speed = 0.018
-	DamageMultiplier = 1.0
-	
-	For g = Each Guns
-		g\Knockback = GetINIFloat("Data\weapons.ini", g\name, "knockback")
-		g\Accuracy = GetINIFloat("Data\weapons.ini", g\name, "accuracy")
-		g\Rate_Of_Fire = GetINIFloat("Data\weapons.ini", g\name, "rate_of_fire")
-	Next
-	
 	GodMode = 0
 	NoClip = 0
-	NoBlink = 0
-	InfiniteAmmo = 0
-	InstantKill = 0
 	WireframeState = 0
 	WireFrame 0
 	WearingGasMask = 0
@@ -4680,7 +4586,7 @@ Function GetStepSound(entity%,collradius#=0.3)
 				If texture <> 0 Then
 					name = StripPath(TextureName(texture))
 					If (name <> "") Then
-						DeleteSingleTextureEntryFromCache(texture)
+						FreeTexture(texture)
 						For mat.Materials = Each Materials
 							If mat\name = name Then
 								If mat\StepSound > 0 Then
@@ -5145,16 +5051,16 @@ Function UpdateInfect()
 	
 	Local teleportForInfect% = True
 	
-	If PlayerRoom\RoomTemplate\Name = "room860"
+	If PlayerRoom\RoomTemplate\Name = "testroom_860"
 		For e.Events = Each Events
-			If e\EventName = "room860"
+			If e\EventName = "testroom_860"
 				If e\EventState = 1.0
 					teleportForInfect = False
 				EndIf
 				Exit
 			EndIf
 		Next
-	ElseIf PlayerRoom\RoomTemplate\Name = "dimension1499" Lor PlayerRoom\RoomTemplate\Name = "pocketdimension"
+	ElseIf PlayerRoom\RoomTemplate\Name = "dimension1499" Lor PlayerRoom\RoomTemplate\Name = "pocketdimension" Lor NTF_CurrZone <> HCZ Then
 		teleportForInfect = False
 	EndIf
 	
@@ -5197,7 +5103,7 @@ Function UpdateInfect()
 				If Infect >= 92.7 And temp < 92.7 Then
 					If teleportForInfect
 						For r.Rooms = Each Rooms
-							If r\RoomTemplate\Name="008" Then
+							If r\RoomTemplate\Name="cont_008" Then
 								PositionEntity Collider, EntityX(r\Objects[7],True),EntityY(r\Objects[7],True),EntityZ(r\Objects[7],True),True
 								ResetEntity Collider
 								r\NPC[0] = CreateNPC(NPCtypeD, EntityX(r\Objects[6],True),EntityY(r\Objects[6],True)+0.2,EntityZ(r\Objects[6],True))
@@ -5207,6 +5113,7 @@ Function UpdateInfect()
 								r\NPC[0]\State=6
 								PlayerRoom = r
 								UnableToMove = False
+								IsZombie = True
 								Exit
 							EndIf
 						Next
@@ -5227,7 +5134,7 @@ Function UpdateInfect()
 					PointEntity Collider, PlayerRoom\NPC[0]\Collider
 					PointEntity PlayerRoom\NPC[0]\Collider, Collider
 					PointEntity Camera, PlayerRoom\NPC[0]\Collider,EntityRoll(Camera)
-					ForceMove = 0.75
+					ForceMove = 0.3
 					;Injuries = 2.5
 					;Bloodloss = 0
 					UnableToMove = False
@@ -5730,6 +5637,7 @@ Function SaveOptionsINI()
 	PutINIValue(gv\OptionFile, "binds", "Use key", KEY_USE)
 	PutINIValue(gv\OptionFile, "options", "fov", FOV)
 	;PutINIValue(gv\OptionFile, "options", "pack", "English") TODO
+	PutINIValue(gv\OptionFile, "options", "show disclaimers", opt\ShowDisclaimers)
 	SaveController()
 	SaveKeyBinds()
 	
@@ -5739,34 +5647,41 @@ End Function
 
 Function Graphics3DExt%(width%,height%,depth%=32,mode%=2)
 	
+	SetGfxDriver(opt\GraphicDriver+1)
 	Graphics3D width,height,depth,mode
-	SetGfxDriver(CountGfxDrivers())
 	TextureFilter "", 8192 ;This turns on Anisotropic filtering for textures. Use TextureAnisotropic to change anisotropic level.
 	InitFastResize()
 	
 End Function
 
 Function ResizeImage2(image%,width%,height%)
-	Local img%, oldWidth%, oldHeight%
+	Local img% = CopyImage(image)
+	FreeImage image
+	ResizeImage(img,width,height)
+	Return img
 	
-    img% = CreateImage(width,height)
+	;TODO Broken with dgVoodoo implementation
 	
-	oldWidth% = ImageWidth(image)
-	oldHeight% = ImageHeight(image)
-	CopyRect 0,0,oldWidth,oldHeight,2048-oldWidth/2,2048-oldHeight/2,ImageBuffer(image),TextureBuffer(fresize_texture)
-	SetBuffer BackBuffer()
-	ScaleRender(0,0,4096.0 / Float(RealGraphicWidth) * Float(width) / Float(oldWidth), 4096.0 / Float(RealGraphicWidth) * Float(height) / Float(oldHeight))
-	;might want to replace Float(opt\GraphicWidth) with Max(opt\GraphicWidth,opt\GraphicHeight) if portrait sizes cause issues
-	;everyone uses landscape so it's probably a non-issue
-	CopyRect RealGraphicWidth/2-width/2,RealGraphicHeight/2-height/2,width,height,0,0,BackBuffer(),ImageBuffer(img)
-	
-    FreeImage image
-    Return img
+;	Local img%, oldWidth%, oldHeight%
+;	
+;    img% = CreateImage(width,height)
+;	
+;	oldWidth% = ImageWidth(image)
+;	oldHeight% = ImageHeight(image)
+;	CopyRect 0,0,oldWidth,oldHeight,2048-oldWidth/2,2048-oldHeight/2,ImageBuffer(image),TextureBuffer(fresize_texture)
+;	SetBuffer BackBuffer()
+;	ScaleRender(0,0,4096.0 / Float(RealGraphicWidth) * Float(width) / Float(oldWidth), 4096.0 / Float(RealGraphicWidth) * Float(height) / Float(oldHeight))
+;	;might want to replace Float(opt\GraphicWidth) with Max(opt\GraphicWidth,opt\GraphicHeight) if portrait sizes cause issues
+;	;everyone uses landscape so it's probably a non-issue
+;	CopyRect RealGraphicWidth/2-width/2,RealGraphicHeight/2-height/2,width,height,0,0,BackBuffer(),ImageBuffer(img)
+;	
+;    FreeImage image
+;    Return img
 End Function
 
 
 Function RenderWorld2(tween#)
-	Local temp%, temp2%, dist#, pitchvalue#, yawvalue#, xvalue#, yvalue#
+	Local dist#
 	Local np.NPCs
 	Local i%, k%, l%
 	
@@ -5790,11 +5705,13 @@ Function RenderWorld2(tween#)
 	
 	Local hasBattery% = 2
 	Local power% = 0
-	If (WearingNightVision=1) Or (WearingNightVision=2)
+	If (WearingNightVision=1) Lor (WearingNightVision=2)
 		For i% = 0 To MaxItemAmount - 1
 			If (Inventory[i]<>Null) Then
-				If (WearingNightVision = 1 And Inventory[i]\itemtemplate\tempname = "nvgoggles") Or (WearingNightVision = 2 And Inventory[i]\itemtemplate\tempname = "supernv") Then
-					Inventory[i]\state = Inventory[i]\state - (FPSfactor * (0.02 * WearingNightVision))
+				If (WearingNightVision = 1 And Inventory[i]\itemtemplate\tempname = "nvgoggles") Lor (WearingNightVision = 2 And Inventory[i]\itemtemplate\tempname = "supernv") Then
+					If (Not MenuOpen) And (Not InvOpen) And (OtherOpen = Null) And (d_I\SelectedDoor = Null) And (Not ConsoleOpen) And (Not Using294) And (SelectedScreen = Null) Then
+						Inventory[i]\state = Inventory[i]\state - (FPSfactor * (0.02 * WearingNightVision))
+					EndIf
 					power%=Int(Inventory[i]\state)
 					If Inventory[i]\state<=0.0 Then ;this nvg can't be used
 						hasBattery = 0
@@ -5822,10 +5739,12 @@ Function RenderWorld2(tween#)
 		IsNVGBlinking% = True
 		ShowEntity NVBlink%
 	EndIf
-	
-	If BlinkTimer < - 16 Or BlinkTimer > - 6
+	;TODO Rewrite the code for the blue NVG. Perhaps move it to an own function.
+	If BlinkTimer < - 16 Lor BlinkTimer > - 6 Then
 		If WearingNightVision=2 And hasBattery<>0 Then ;show a HUD
-			NVTimer=NVTimer-FPSfactor
+			If (Not MenuOpen) And (Not InvOpen) And (OtherOpen = Null) And (d_I\SelectedDoor = Null) And (Not ConsoleOpen) And (Not Using294) And (SelectedScreen = Null) Then
+				NVTimer=NVTimer-FPSfactor
+			EndIf
 			
 			If NVTimer<=0.0 Then
 				For np.NPCs = Each NPCs
@@ -5839,65 +5758,44 @@ Function RenderWorld2(tween#)
 					NVTimer = 600.0
 				EndIf
 			EndIf
+		EndIf
+	EndIf
+	
+	;render sprites
+	CameraProjMode ark_blur_cam,2
+	CameraProjMode Camera,0
+	RenderWorld()
+	CameraProjMode ark_blur_cam,0
+	
+	If BlinkTimer < - 16 Lor BlinkTimer > - 6 Then
+		If WearingNightVision=2 And hasBattery<>0 Then ;show a HUD
 			
-			Color 255,255,255
+			Color 100,100,255
 			
-			SetFont fo\Font[Font_Digital_Large]
+			SetFont fo\Font[Font_Digital_Small]
 			
-			Local plusY% = 0
-			If hasBattery=1 Then plusY% = 40
-			
-			Text opt\GraphicWidth/2,(20+plusY)*MenuScale,"REFRESHING DATA IN",True,False
-			
-			Text opt\GraphicWidth/2,(60+plusY)*MenuScale,Max(f2s(NVTimer/60.0,1),0.0),True,False
-			Text opt\GraphicWidth/2,(100+plusY)*MenuScale,"SECONDS",True,False
-			
-			temp% = CreatePivot() : temp2% = CreatePivot()
-			PositionEntity temp, EntityX(Collider), EntityY(Collider), EntityZ(Collider)
-			
-			Color 255,255,255;*(NVTimer/600.0)
+			Text opt\GraphicWidth/2,140*MenuScale,"REFRESHING DATA IN",True,False
+			Text opt\GraphicWidth/2,165*MenuScale,Max(f2s(NVTimer/60.0,1),0.0),True,False
+			Text opt\GraphicWidth/2,190*MenuScale,"SECONDS",True,False
 			
 			For np.NPCs = Each NPCs
 				If np\NVName<>"" And (Not np\HideFromNVG) Then ;don't waste your time if the string is empty
-					PositionEntity temp2,np\NVX,np\NVY,np\NVZ
-					dist# = EntityDistance(temp2,Collider)
-					If dist<23.5 Then ;don't draw text if the NPC is too far away
-						PointEntity temp, temp2
-						yawvalue# = WrapAngle(EntityYaw(Camera) - EntityYaw(temp))
-						xvalue# = 0.0
-						If yawvalue > 90 And yawvalue <= 180 Then
-							xvalue# = Sin(90)/90*yawvalue
-						Else If yawvalue > 180 And yawvalue < 270 Then
-							xvalue# = Sin(270)/yawvalue*270
-						Else
-							xvalue = Sin(yawvalue)
-						EndIf
-						pitchvalue# = WrapAngle(EntityPitch(Camera) - EntityPitch(temp))
-						yvalue# = 0.0
-						If pitchvalue > 90 And pitchvalue <= 180 Then
-							yvalue# = Sin(90)/90*pitchvalue
-						Else If pitchvalue > 180 And pitchvalue < 270 Then
-							yvalue# = Sin(270)/pitchvalue*270
-						Else
-							yvalue# = Sin(pitchvalue)
-						EndIf
-						
-						If (Not IsNVGBlinking%)
-							Text opt\GraphicWidth / 2 + xvalue * (opt\GraphicWidth / 2),opt\GraphicHeight / 2 - yvalue * (opt\GraphicHeight / 2),np\NVName,True,True
-							Text opt\GraphicWidth / 2 + xvalue * (opt\GraphicWidth / 2),opt\GraphicHeight / 2 - yvalue * (opt\GraphicHeight / 2) + 30.0 * MenuScale,f2s(dist,1)+" m",True,True
+					dist# = DistanceSquared(EntityX(Collider, True), np\NVX, EntityY(Collider, True), np\NVY, EntityZ(Collider, True), np\NVZ)
+					If dist<256.0 Then ;don't draw text if the NPC is too far away
+						If (Not IsNVGBlinking%) Then
+							CameraProject(Camera, np\NVX, np\NVY + 0.5, np\NVZ)
+							Text ProjectedX(), ProjectedY(), np\NVName, True, True
+							Text ProjectedX(), ProjectedY() - 25.0, f2s(dist,1)+" m", True, True
 						EndIf
 					EndIf
 				EndIf
 			Next
 			
-			temp = FreeEntity_Strict(temp)
-			temp2 = FreeEntity_Strict(temp2)
-			
 			Color 0,0,55
 			For k=0 To 10
 				Rect 45,opt\GraphicHeight*0.5-(k*20),54,10,True
 			Next
-			Color 0,0,255
+			Color 100,100,255
 			For l=0 To Floor((power%+50)*0.01)
 				Rect 45,opt\GraphicHeight*0.5-(l*20),54,10,True
 			Next
@@ -5915,20 +5813,12 @@ Function RenderWorld2(tween#)
 			Next
 			DrawImage NVGImages,40,opt\GraphicHeight*0.5+30,0
 		EndIf
-	EndIf
-	
-	;render sprites
-	CameraProjMode ark_blur_cam,2
-	CameraProjMode Camera,0
-	RenderWorld()
-	CameraProjMode ark_blur_cam,0
-	
-	If BlinkTimer < - 16 Or BlinkTimer > - 6 Then
+		
 		If (WearingNightVision=1 Or WearingNightVision=2) And (hasBattery=1) And ((MilliSecs() Mod 800) < 400) Then
 			Color 255,0,0
-			SetFont fo\Font[Font_Digital_Large]
+			SetFont fo\Font[Font_Digital_Small]
 			
-			Text opt\GraphicWidth/2,20*MenuScale,"WARNING: LOW BATTERY",True,False
+			Text opt\GraphicWidth/2,100*MenuScale,"WARNING: LOW BATTERY",True,False
 			Color 255,255,255
 		EndIf
 	EndIf
@@ -6146,60 +6036,15 @@ Function UpdateDeafPlayer()
 End Function
 
 Function ScaledMouseX%()
-	Return Float(MouseX()-(RealGraphicWidth*0.5*(1.0-AspectRatioRatio)))*Float(opt\GraphicWidth)/Float(RealGraphicWidth*AspectRatioRatio)
+	Return Float(MousePosX-(RealGraphicWidth*0.5*(1.0-AspectRatioRatio)))*Float(opt\GraphicWidth)/Float(RealGraphicWidth*AspectRatioRatio)
 End Function
 
 Function ScaledMouseY%()
-	Return Float(MouseY())*Float(opt\GraphicHeight)/Float(RealGraphicHeight)
+	Return MousePosY*Float(opt\GraphicHeight)/Float(RealGraphicHeight)
 End Function
 
 Function CatchErrors(location$)
-	;errtxt = errtxt+"Video memory: "+((TotalVidMem()/1024)-(AvailVidMem()/1024))+" MB/"+(TotalVidMem()/1024)+" MB"+Chr(10)
-	;errtxt = errtxt+"Global memory status: "+((TotalPhys()/1024)-(AvailPhys()/1024))+" MB/"+(TotalPhys()/1024)+" MB"+Chr(10)
-	SetErrorMsg(7, "Error located in: "+location)
-	;[Block]
-;	Local errF%
-;	If Len(errStr)>0 Then
-;		If FileType(gv\ErrorFile)=0 Then
-;			errF = WriteFile(gv\ErrorFile)
-;			WriteLine errF,"An error occured in SCP - Containment Breach!"
-;			WriteLine errF,"Version: "+VersionNumber
-;			WriteLine errF,"Save compatible version: "+CompatibleNumber
-;			WriteLine errF,"Date and time: "+CurrentDate()+" at "+CurrentTime()
-;			WriteLine errF,"Total video memory (MB): "+TotalVidMem()/1024/1024
-;			WriteLine errF,"Available video memory (MB): "+AvailVidMem()/1024/1024
-;			WriteLine errF,"Global memrory status: "+(AvailPhys()/1024)+" MB/"+(TotalPhys()/1024)+" MB ("+AvailPhys()+" KB/"+TotalPhys()+" KB)"
-;			WriteLine errF,"Triangles rendered: "+CurrTrisAmount
-;			WriteLine errF,"Active textures: "+ActiveTextures()
-;			WriteLine errF,""
-;			WriteLine errF,"Error(s):"
-;		Else
-;			Local canwriteError% = True
-;			errF = OpenFile_Strict(gv\ErrorFile)
-;			While (Not Eof(errF))
-;				Local l$ = ReadLine(errF)
-;				If Left(l,Len(location))=location
-;					canwriteError = False
-;					Exit
-;				EndIf
-;			Wend
-;			If canwriteError
-;				SeekFile errF,FileSize(gv\ErrorFile)
-;			EndIf
-;		EndIf
-;		If canwriteError
-;			WriteLine errF,location+" ***************"
-;			While Len(errStr)>0
-;				WriteLine errF,errStr
-;				DebugLog errStr
-;				;errStr = ErrorLog()
-;			Wend
-;		EndIf
-;		Msg = "Blitz3D Error! Details in "+Chr(34)+gv\ErrorFile+Chr(34)
-;		MsgTimer = 20*70
-;		CloseFile errF
-;	EndIf
-	;[End Block]
+	SetErrorMsg(9, "Location: "+location)
 End Function
 
 Function PlayAnnouncement(file$) ;This function streams the announcement currently playing
@@ -6260,18 +6105,18 @@ End Function
 Function InitFonts()
 	Local txt$
 	
-	fo\Font[Font_Default] = LoadFont_Strict("GFX\font\Courier New.ttf", Int(16 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Default_Medium] = LoadFont_Strict("GFX\font\Courier New.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Default_Large] = LoadFont_Strict("GFX\font\Courier New.ttf", Int(46 * (opt\GraphicHeight / 1024.0))) ;TODO make this use a bold font
-	fo\Font[Font_Menu_Small] = LoadFont_Strict("GFX\font\Capture It.ttf",Int(23 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Menu_Medium] = LoadFont_Strict("GFX\font\Capture It.ttf",Int(42 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Menu] = LoadFont_Strict("GFX\font\Capture It.ttf", Int(56 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Digital_Small] = LoadFont_Strict("GFX\font\DS-Digital.ttf", Int(20 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Digital_Medium] = LoadFont_Strict("GFX\font\DS-Digital.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Digital_Large] = LoadFont_Strict("GFX\font\DS-Digital.ttf", Int(58 * (opt\GraphicHeight / 1024.0)))
-	fo\Font[Font_Journal] = LoadFont_Strict("GFX\font\Journal.ttf", Int(56 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Default] = LoadFont("GFX\font\Courier New.ttf", Int(16 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Default_Medium] = LoadFont("GFX\font\Courier New.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Default_Large] = LoadFont("GFX\font\Courier New.ttf", Int(46 * (opt\GraphicHeight / 1024.0))) ;TODO make this use a bold font
+	fo\Font[Font_Menu_Small] = LoadFont("GFX\font\Capture It.ttf",Int(23 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Menu_Medium] = LoadFont("GFX\font\Capture It.ttf",Int(42 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Menu] = LoadFont("GFX\font\Capture It.ttf", Int(56 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Digital_Small] = LoadFont("GFX\font\DS-Digital.ttf", Int(20 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Digital_Medium] = LoadFont("GFX\font\DS-Digital.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Digital_Large] = LoadFont("GFX\font\DS-Digital.ttf", Int(58 * (opt\GraphicHeight / 1024.0)))
+	fo\Font[Font_Journal] = LoadFont("GFX\font\Journal.ttf", Int(56 * (opt\GraphicHeight / 1024.0)))
 	
-	fo\ConsoleFont% = LoadFont_Strict("GFX\font\Minimal5x7.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
+	fo\ConsoleFont% = LoadFont("GFX\font\Minimal5x7.ttf", Int(28 * (opt\GraphicHeight / 1024.0)))
 	
 	SetFont fo\Font[Font_Menu]
 	
@@ -6313,6 +6158,7 @@ Function TeleportEntity(entity%,x#,y#,z#,customradius#=0.3,isglobal%=False,pickr
 End Function
 
 Function PlayStartupVideos()
+	CatchErrors("PlayStartupVideos()")
 	
 	If GetINIInt(gv\OptionFile,"options","play startup video",1)=0 Then Return
 	
@@ -6354,7 +6200,7 @@ Function PlayStartupVideos()
 			BlitzMovie_DrawD3D(0, (RealGraphicHeight/2-ScaledGraphicHeight/2), RealGraphicWidth, ScaledGraphicHeight)
 			Flip 1
 			Delay 10
-		Until (GetKey() Lor (Not IsStreamPlaying_Strict(SplashScreenAudio)))
+		Until (GetKey() Lor MouseHit(1) Lor (Not IsStreamPlaying_Strict(SplashScreenAudio)))
 		
 		StopStream_Strict(SplashScreenAudio)
 		BlitzMovie_Stop()
@@ -6365,6 +6211,7 @@ Function PlayStartupVideos()
 	
 	ShowPointer()
 	
+	CatchErrors("PlayStartupVideos()/Uncaught")
 End Function
 
 Function ProjectImage(img, w#, h#, Quad%, Texture%)
@@ -6442,6 +6289,7 @@ Function ResetInput()
 	MouseHit(1)
 	MouseHit(2)
 	MouseDown(1)
+	MouseDown(2)
 	GrabbedEntity = 0
 	Input_ResetTime# = 10.0
 	
@@ -6449,6 +6297,7 @@ Function ResetInput()
 	keyhituse = 0
 	keydownuse = 0
 	MouseHit(3)
+	MouseDown(3)
 	
 End Function
 
@@ -6467,38 +6316,40 @@ Function GammaUpdate()
 		EndIf
 	EndIf
 	
+	;TODO Broken with dgVoodoo implementation
+	
 	;not by any means a perfect solution
 	;Not even proper gamma correction but it's a nice looking alternative that works in windowed mode
-	If ScreenGamma>=1.0 Then
-		CopyRect 0,0,RealGraphicWidth,RealGraphicHeight,2048-RealGraphicWidth/2,2048-RealGraphicHeight/2,BackBuffer(),TextureBuffer(fresize_texture)
-		EntityBlend fresize_image,1
-		ClsColor 0,0,0 : Cls
-		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
-		EntityFX fresize_image,1+32
-		EntityBlend fresize_image,3
-		EntityAlpha fresize_image,ScreenGamma-1.0
-		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
-	ElseIf ScreenGamma<1.0 Then ;todo: maybe optimize this if it's too slow, alternatively give players the option to disable gamma
-		CopyRect 0,0,RealGraphicWidth,RealGraphicHeight,2048-RealGraphicWidth/2,2048-RealGraphicHeight/2,BackBuffer(),TextureBuffer(fresize_texture)
-		EntityBlend fresize_image,1
-		ClsColor 0,0,0 : Cls
-		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
-		EntityFX fresize_image,1+32
-		EntityBlend fresize_image,2
-		EntityAlpha fresize_image,1.0
-		SetBuffer TextureBuffer(fresize_texture2)
-		ClsColor 255*ScreenGamma,255*ScreenGamma,255*ScreenGamma
-		Cls
-		SetBuffer BackBuffer()
-		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
-		SetBuffer(TextureBuffer(fresize_texture2))
-		ClsColor 0,0,0
-		Cls
-		SetBuffer(BackBuffer())
-	EndIf
-	EntityFX fresize_image,1
-	EntityBlend fresize_image,1
-	EntityAlpha fresize_image,1.0
+;	If ScreenGamma>=1.0 Then
+;		CopyRect 0,0,RealGraphicWidth,RealGraphicHeight,2048-RealGraphicWidth/2,2048-RealGraphicHeight/2,BackBuffer(),TextureBuffer(fresize_texture)
+;		EntityBlend fresize_image,1
+;		ClsColor 0,0,0 : Cls
+;		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
+;		EntityFX fresize_image,1+32
+;		EntityBlend fresize_image,3
+;		EntityAlpha fresize_image,ScreenGamma-1.0
+;		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
+;	ElseIf ScreenGamma<1.0 Then ;todo: maybe optimize this if it's too slow, alternatively give players the option to disable gamma
+;		CopyRect 0,0,RealGraphicWidth,RealGraphicHeight,2048-RealGraphicWidth/2,2048-RealGraphicHeight/2,BackBuffer(),TextureBuffer(fresize_texture)
+;		EntityBlend fresize_image,1
+;		ClsColor 0,0,0 : Cls
+;		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
+;		EntityFX fresize_image,1+32
+;		EntityBlend fresize_image,2
+;		EntityAlpha fresize_image,1.0
+;		SetBuffer TextureBuffer(fresize_texture2)
+;		ClsColor 255*ScreenGamma,255*ScreenGamma,255*ScreenGamma
+;		Cls
+;		SetBuffer BackBuffer()
+;		ScaleRender(-1.0/Float(RealGraphicWidth),1.0/Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth),4096.0 / Float(RealGraphicWidth))
+;		SetBuffer(TextureBuffer(fresize_texture2))
+;		ClsColor 0,0,0
+;		Cls
+;		SetBuffer(BackBuffer())
+;	EndIf
+;	EntityFX fresize_image,1
+;	EntityBlend fresize_image,1
+;	EntityAlpha fresize_image,1.0
 	
 End Function
 
@@ -6542,6 +6393,26 @@ Function UpdateRichPresence()
 	Else
 		gv\RichPresenceTimer = gv\RichPresenceTimer - FPSfactor
 	EndIf
-End Function	
+End Function
+
+Function ShowStats()
+	If opt\ShowFPS Then
+		Color 255, 255, 255
+		SetFont fo\ConsoleFont
+		Text 20, 20, "FPS: " + ft\fps
+		
+		If gopt\GameMode = GAMEMODE_MULTIPLAYER And mp_I\PlayState = GAME_CLIENT Then
+			If Players[mp_I\PlayerID]\Ping >= 200 Then
+				Color 200, 0, 0
+			ElseIf Players[mp_I\PlayerID]\Ping >= 150 Then
+				Color 200, 200, 0
+			EndIf
+			Text 120, 20, "Ping: " + Players[mp_I\PlayerID]\Ping + " ms"
+		EndIf
+		
+		SetFont fo\Font[Font_Default]
+	EndIf
+End Function
+
 ;~IDEal Editor Parameters:
 ;~C#Blitz3D

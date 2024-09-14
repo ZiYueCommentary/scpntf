@@ -146,7 +146,7 @@ Function CreatePlayerTag(playerID%)
 	ScaleSprite Players[playerID]\NameTag,0.0006*(StringWidth(Players[playerID]\Name)),0.025
 	EntityFX Players[playerID]\NameTag,1+8
 	EntityOrder Players[playerID]\NameTag,-1
-	Local tex% = CreateTexture(1024,64,256+4)
+	Local tex% = CreateTextureUsingCacheSystem(1024,64,4)
 	SetBuffer TextureBuffer(tex)
 	ClsColor 0,0,0
 	Cls
@@ -834,7 +834,7 @@ Function AnimatePlayerModelsAndSpectate()
 						mp_I\SpectatePlayer = mp_I\PlayerID
 					EndIf
 					
-					If (Not MenuOpen) And (Not ConsoleOpen) And (Not InLobby()) And (Not IsModerationOpen()) And (Not IsInVote()) Then
+					If (Not MenuOpen) And (Not ConsoleOpen) And (Not InLobby()) And (Not IsModerationOpen()) And (Not IsInVote()) And (Not Animating(Players[i]\obj_upper)) Then
 						If MouseHit1 Then
 							FindPlayerToSpectate(1)
 						EndIf
@@ -1390,10 +1390,10 @@ Function SetupTeam(playerid%)
 							If Left(Lower(name),5) = "hands" Then
 								BrushTexture b, tex, 0, j
 								PaintSurface sf,b
-								DeleteSingleTextureEntryFromCache t1
+								FreeTexture t1
 								Exit
 							EndIf
-							If name<>"" Then DeleteSingleTextureEntryFromCache t1
+							If name<>"" Then FreeTexture t1
 						EndIf
 					Next
 					FreeBrush b

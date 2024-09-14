@@ -576,7 +576,7 @@ Function UpdateGuns()
 			prevFrame# = AnimTime(g\obj)
 			
 			If g\ID = pHoldingGun Then
-				shootCondition = ((Not MenuOpen) And (Not ConsoleOpen) And ((Not isMultiplayer) Lor ((Not InLobby()) And (Not mp_I\ChatOpen) And (Not mp_I\Gamemode\DisableMovement) And (Not IsInVote()))) And (Not IsPlayerListOpen()) And (Not IsModerationOpen()))
+				shootCondition = (SelectedItem = Null) And ((Not MenuOpen) And (Not ConsoleOpen) And ((Not isMultiplayer) Lor ((Not InLobby()) And (Not mp_I\ChatOpen) And (Not mp_I\Gamemode\DisableMovement) And (Not IsInVote()))) And (Not IsPlayerListOpen()) And (Not IsModerationOpen()))
 				Select g\GunType
 					Case GUNTYPE_AUTO
 						;[Block]
@@ -650,7 +650,7 @@ Function UpdateGuns()
 									ChangeGunFrames(g,g\Anim_Shoot,False)
 									If Ceil(AnimTime(g\obj)) = g\Anim_Shoot\x Then
 										PlayGunSound(g\name,g\MaxShootSounds,0,True)
-										CameraShake = g\Knockback/2.0
+										CameraShake = g\Knockback/3.0
 										user_camera_pitch = user_camera_pitch - g\Knockback
 										g_I\GunLightTimer = FPSfactor
 										shooting = True
@@ -771,22 +771,20 @@ Function UpdateGuns()
 										ChangeGunFrames(g,g\Anim_NoAmmo_Shoot,False)
 										If Ceil(AnimTime(g\obj)) = g\Anim_NoAmmo_Shoot\x Then
 											PlayGunSound("slideback2",1,1,False)
-											If CameraShake <= (g\Knockback/2)-FPSfactor-0.05 Then
-												PlayGunSound(g\name,g\MaxShootSounds,0,True)
-												CameraShake = g\Knockback/2.0
-												user_camera_pitch = user_camera_pitch - g\Knockback
-												g_I\GunLightTimer = FPSfactor
-												ShowEntity g\MuzzleFlash
-												TurnEntity g\MuzzleFlash,0,0,Rnd(360)
-												ScaleSprite g\MuzzleFlash,Rnd(0.025,0.03),Rnd(0.025,0.03)
-											EndIf
+											PlayGunSound(g\name,g\MaxShootSounds,0,True)
+											CameraShake = g\Knockback/3.0
+											user_camera_pitch = user_camera_pitch - g\Knockback
+											g_I\GunLightTimer = FPSfactor
+											ShowEntity g\MuzzleFlash
+											TurnEntity g\MuzzleFlash,0,0,Rnd(360)
+											ScaleSprite g\MuzzleFlash,Rnd(0.025,0.03),Rnd(0.025,0.03)
 											shooting = True
 										EndIf
 									Else
 										ChangeGunFrames(g,g\Anim_Shoot,False)
 										If Ceil(AnimTime(g\obj)) = g\Anim_Shoot\x Then
 											PlayGunSound(g\name,g\MaxShootSounds,0,True)
-											CameraShake = g\Knockback/2.0
+											CameraShake = g\Knockback/3.0
 											user_camera_pitch = user_camera_pitch - g\Knockback
 											g_I\GunLightTimer = FPSfactor
 											shooting = True
@@ -891,7 +889,7 @@ Function UpdateGuns()
 									ChangeGunFrames(g,g\Anim_Shoot,False)
 									If Ceil(AnimTime(g\obj)) = g\Anim_Shoot\x Then
 										PlayGunSound(g\name,g\MaxShootSounds,0,True)
-										CameraShake = g\Knockback/2.0
+										CameraShake = g\Knockback/3.0
 										user_camera_pitch = user_camera_pitch - g\Knockback
 										g_I\GunLightTimer = FPSfactor
 										shooting = True
@@ -1009,11 +1007,13 @@ Function UpdateGuns()
 								EndIf
 								pShootState = FPSfactor
 								pReloadState = 0.0
+								pPressReload = False
 							EndIf
 						EndIf
 						If pShootState > 0.0 And pShootState < g\Rate_Of_Fire Then
 							pShootState = pShootState + FPSfactor
 							pReloadState = 0.0
+							pPressReload = False
 						Else
 							pShootState = 0.0
 						EndIf
@@ -1583,13 +1583,32 @@ Function ToggleGuns()
 	Local KeyPressed%[MaxGunSlots]
 	Local KeyPressedHolster% = KeyHit(KEY_HOLSTERGUN)
 	
-	For i = 0 To MaxGunSlots-1
-		If co\Enabled Then
-			KeyPressed[i] = GetDPadButtonPress()
-		Else
-			KeyPressed[i] = KeyHit(i + 2)
+	If SelectedItem <> Null Then
+		If SelectedItem\itemtemplate\tempname = "nav" Lor SelectedItem\itemtemplate\name = "Radio Transceiver" Then
+			g_I\GunChangeFLAG = False
+			g_I\HoldingGun = 0
 		EndIf
-	Next
+	Else
+		If g_I\Weapon_CurrSlot <> 0 And g_I\HoldingGun = 0 Then
+			If g_I\Weapon_InSlot[g_I\Weapon_CurrSlot-1] <> "" Then
+				g_I\GunChangeFLAG = False
+				For g = Each Guns
+					If g\name = g_I\Weapon_InSlot[g_I\Weapon_CurrSlot-1] Then
+						g_I\HoldingGun = g\ID
+						Exit
+					EndIf
+				Next
+			EndIf
+		EndIf
+		
+		For i = 0 To MaxGunSlots-1
+			If co\Enabled Then
+				KeyPressed[i] = GetDPadButtonPress()
+			Else
+				KeyPressed[i] = KeyHit(i + 2)
+			EndIf
+		Next
+	EndIf
 	
 	If KillTimer >= 0 And CanPlayerUseGuns And FPSfactor > 0.0 And ChatSFXOpened = False And (Not g_I\IronSight) Then
 		For i = 0 To MaxGunSlots-1
@@ -1985,7 +2004,7 @@ Function ShootGun(g.Guns)
 		RotateEntity p\pvt, EntityPitch(g_I\GunPivot)-180, EntityYaw(g_I\GunPivot),0
 		
 		If g\GunType <> GUNTYPE_MELEE Then
-			PlaySound2(Gunshot3SFX, Camera, p\pvt, 0.4, Rnd(0.8,1.0))
+			PlaySound2(Gunshot3SFX, Camera, p\pvt, 5.0, Rnd(0.8,1.0))
 		Else
 			PlayGunSound(g\name+"\hitwall",g\MaxWallhitSounds,0,True,True)
 		EndIf
@@ -2204,23 +2223,25 @@ Function UpdateIronSight()
 		g_I\IronSightAnim = 0
 	EndIf
 	
-	If opt\HoldToAim Then
-		If (Not g_I\IronSightAnim) And hasIronSight Then
-			prevIronSight = g_I\IronSight
-			g_I\IronSight% = MouseDown2
-			If g_I\IronSight <> prevIronSight Then
-				g_I\IronSightAnim = 2
+	If SelectedItem = Null Then
+		If opt\HoldToAim Then
+			If (Not g_I\IronSightAnim) And hasIronSight Then
+				prevIronSight = g_I\IronSight
+				g_I\IronSight% = MouseDown2
+				If g_I\IronSight <> prevIronSight Then
+					g_I\IronSightAnim = 2
+				EndIf
 			EndIf
-		EndIf
-	Else
-		If MouseHit2 Then
-			If SelectedItem = Null Then
+		Else
+			If MouseHit2 Then
 				If (Not g_I\IronSightAnim) And hasIronSight Then
 					g_I\IronSight% = (Not g_I\IronSight%)
 					g_I\IronSightAnim = 2
 				EndIf
 			EndIf
 		EndIf
+	Else
+		DeselectIronSight()
 	EndIf
 	
 End Function

@@ -201,12 +201,7 @@ Function UpdateNPCtype035MP(n.NPCs)
 							EndIf
 							If Players[n\ClosestPlayer]\CurrHP > 0 Then
 								DamagePlayer(n\ClosestPlayer,Rand(15,21),Rand(26,33),5)
-								If Players[n\ClosestPlayer]\CurrHP <= 0 Then
-									cmsg = AddChatMSG("death_killedby", 0, SERVER_MSG_IS, CHATMSG_TYPE_TWOPARAM_TRANSLATE)
-									cmsg\Msg[1] = Players[n\ClosestPlayer]\Name
-									cmsg\Msg[2] = n\NVName
-									Players[n\ClosestPlayer]\Deaths = Players[n\ClosestPlayer]\Deaths + 1
-								EndIf
+								IsPlayerKilledByNPC(n)
 							EndIf	
 						EndIf
 					EndIf
@@ -464,12 +459,7 @@ Function UpdateNPCtypeTentacleMP(n.NPCs)
 										EndIf
 									EndIf
 									DamagePlayer(n\ClosestPlayer,Rand(19,28),Rand(30,41),4)
-									If Players[n\ClosestPlayer]\CurrHP <= 0 Then
-										cmsg = AddChatMSG("death_killedby", 0, SERVER_MSG_IS, CHATMSG_TYPE_TWOPARAM_TRANSLATE)
-										cmsg\Msg[1] = Players[n\ClosestPlayer]\Name
-										cmsg\Msg[2] = n\NVName
-										Players[n\ClosestPlayer]\Deaths = Players[n\ClosestPlayer]\Deaths + 1
-									EndIf
+									IsPlayerKilledByNPC(n)
 								EndIf
 							EndIf
 							
@@ -519,7 +509,7 @@ Function UpdateNPCtypeTentacleMP(n.NPCs)
 		
 		PositionEntity(n\obj, EntityX(n\Collider), EntityY(n\Collider), EntityZ(n\Collider))
 		RotateEntity n\obj, EntityPitch(n\Collider)-90, EntityYaw(n\Collider)-180, EntityRoll(n\Collider), True
-	Else
+	Else ;TODO Rewrite this a little
 		If (Not n\Target\IsDead) Then
 			If n\State = TENTACLE_SPAWN Then
 				If n\Frame>286 Then
@@ -534,7 +524,7 @@ Function UpdateNPCtypeTentacleMP(n.NPCs)
 					n\Sound2 = LoadSound_Strict("SFX\Room\035Chamber\TentacleSpawn.ogg")
 					n\SoundChn2 = PlaySound2(n\Sound2, Camera, n\Target\Collider)
 				EndIf
-			Else
+			ElseIf n\State <> TENTACLE_FREEZE Then
 				If n\State = TENTACLE_IDLE Then
 					AnimateNPC(n, 33, 174, Rnd(0.1,0.5), True)
 					If n\Target\State = MP035_STATE_ATTACK Then
@@ -573,11 +563,7 @@ Function UpdateNPCtypeTentacleMP(n.NPCs)
 										EndIf
 									EndIf
 									DamagePlayer(n\Target\ClosestPlayer,Rand(19,28),Rand(30,41),4)
-									If Players[n\ClosestPlayer]\CurrHP <= 0 Then
-										cmsg = AddChatMSG("death_killedby", 0, SERVER_MSG_IS, CHATMSG_TYPE_TWOPARAM_TRANSLATE)
-										cmsg\Msg[1] = Players[n\ClosestPlayer]\Name
-										cmsg\Msg[2] = n\NVName
-									EndIf
+									IsPlayerKilledByNPC(n)
 								EndIf
 							EndIf
 							

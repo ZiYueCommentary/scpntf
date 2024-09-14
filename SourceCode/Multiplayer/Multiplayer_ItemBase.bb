@@ -157,14 +157,16 @@ Function UpdateMPItems()
 					HideEntity i\OverHereSprite
 				Else
 					ShowEntity i\OverHereSprite
-					PositionEntity i\OverHereSprite, EntityX(i\collider), EntityY(i\collider), EntityZ(i\collider)
+					PositionEntity i\OverHereSprite, EntityX(i\collider), EntityY(i\collider)+0.25, EntityZ(i\collider)
 				EndIf
 			EndIf
 			
 			If (Not i\Picked) Then
-				If i\disttimer < MilliSecs() Then
+				If i\disttimer <= 0.0 Then
 					i\dist = EntityDistance(Players[mp_I\PlayerID]\Collider, i\collider)
-					i\disttimer = MilliSecs() + 700
+					i\disttimer = ItemDistanceCheckTime
+				Else
+					i\disttimer = Max(0.0, i\disttimer - FPSfactor)
 				EndIf
 				
 				If i\dist < HideDist Then

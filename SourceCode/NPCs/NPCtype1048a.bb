@@ -186,8 +186,11 @@ Function UpdateNPCtype1048a(n.NPCs)
 			RotateEntity p\pvt,0,0,Rnd(360)
 			p\Achange = -Rnd(0.02,0.03)
 		Next
-		HideEntity(n\obj)
 		n\IsDead = True
+		n\HideFromNVG = True
+	EndIf
+	If n\IsDead Then
+		HideEntity(n\obj)
 	EndIf
 End Function
 
@@ -336,12 +339,7 @@ Function UpdateNPCtype1048aMP(n.NPCs)
 									If dist2 < 16.0 Then
 										If Players[i]\CurrHP > 0 Then
 											Players[i]\CurrHP = Max(Players[i]\CurrHP - 0.5, 0)
-											If Players[i]\CurrHP <= 0 Then
-												cmsg = AddChatMSG("death_killedby", 0, SERVER_MSG_IS, CHATMSG_TYPE_TWOPARAM_TRANSLATE)
-												cmsg\Msg[1] = Players[n\ClosestPlayer]\Name
-												cmsg\Msg[2] = n\NVName
-												Players[i]\Deaths = Players[i]\Deaths + 1
-											EndIf
+											IsPlayerKilledByNPC(n)
 										EndIf
 									EndIf
 								EndIf
@@ -364,7 +362,7 @@ Function UpdateNPCtype1048aMP(n.NPCs)
 			n\IsDead=True
 			EntityType n\Collider,HIT_DEAD
 		EndIf
-		If n\State <> MP1048a_STATE_ATTACK Then
+		If n\State = MP1048a_STATE_WANDER Lor n\State = MP1048a_STATE_DETECTED Then
 			n\SoundChn = LoopSound2(n\Sound,n\SoundChn,Camera,n\Collider,5)
 		EndIf	
 	Else

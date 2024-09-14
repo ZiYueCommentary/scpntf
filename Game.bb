@@ -12,7 +12,13 @@
 ;
 ;This is the main file of the NTF mod, you need to compile this file in order to be able to play the game.
 
-CheckForDlls()
+Const NameOfTheGame$ = "SCP: Nine-Tailed Fox"
+Const VersionNumber$ = "0.2.11"
+Const CompatibleNumber$ = "0.2.10"
+Const BuildMessage$ = ""
+Const AppTitleMain$ = NameOfTheGame+" v"+VersionNumber
+Const AppTitleLauncher$ = NameOfTheGame+" Launcher"
+Const UserAgent$ = "SCPNTF"
 
 Include "SourceCode/Key.bb"
 
@@ -22,6 +28,8 @@ Type GlobalVariables
 	Field OptionFile$
 	Field OSBit%
 	Field RichPresenceTimer#
+	Field SteamIDUpper%
+	Field SteamIDLower%
 End Type
 
 Type Options
@@ -46,6 +54,8 @@ Type Options
 	Field MouseSmooth#
 	Field HoldToAim%
 	Field HoldToCrouch%
+	Field ShowDisclaimers%
+	Field GraphicDriver%
 End Type
 
 Const GAMEMODE_UNKNOWN% = -1
@@ -65,6 +75,15 @@ Include "SourceCode\Controls.bb"
 Include "SourceCode\TypeInstances.bb"
 
 InitGlobalVariables()
+
+InitErrorMsgs(11, True)
+SetErrorMsg(0, "An error occured in "+NameOfTheGame+" v"+VersionNumber+Chr(10)+"Save compatible version: "+CompatibleNumber+". Engine version: "+SystemProperty("blitzversion"))
+SetErrorMsg(1, "OS: "+SystemProperty("os")+" "+gv\OSBit+" bit (Build: "+SystemProperty("osbuild")+")")
+SetErrorMsg(3, "CPU: "+Trim(SystemProperty("cpuname"))+" (Arch: "+SystemProperty("cpuarch")+", "+GetEnv("NUMBER_OF_PROCESSORS")+" Threads)")
+SetErrorMsg(8, "Error: _CaughtError_")
+SetErrorMsg(10, Chr(10)+"Please take a screenshot of this error and send it to us!")
+
+CheckForDlls()
 
 ;Create the folder in the AppData if it doesn't exist
 If (FileType(GetEnv$("AppData")+"\scpntf\")<>2) Then
@@ -87,7 +106,8 @@ Function CheckForDlls()
 	If FileSize("BlitzHash.dll")=0 Then InitErrorStr=InitErrorStr+ "BlitzHash.dll"+Chr(13)+Chr(10)
 	If FileSize("BlitzMovie.dll")=0 Then InitErrorStr=InitErrorStr+ "BlitzMovie.dll"+Chr(13)+Chr(10)
 	If FileSize("BlitzSteamworks.dll")=0 Then InitErrorStr=InitErrorStr+ "BlitzSteamworks.dll"+Chr(13)+Chr(10)
-	If FileSize("d3dim700.dll")=0 Then InitErrorStr=InitErrorStr+ "d3dim700.dll"+Chr(13)+Chr(10)
+	;If FileSize("D3DImm.dll")=0 Then InitErrorStr=InitErrorStr+ "D3DImm.dll"+Chr(13)+Chr(10)
+	;If FileSize("DDraw.dll")=0 Then InitErrorStr=InitErrorStr+ "DDraw.dll"+Chr(13)+Chr(10)
 	If FileSize("discord_game_sdk.dll")=0 Then InitErrorStr=InitErrorStr+ "discord_game_sdk.dll"+Chr(13)+Chr(10)
 	If FileSize("fmod.dll")=0 Then InitErrorStr=InitErrorStr+ "fmod.dll"+Chr(13)+Chr(10)
 	If FileSize("steam_api.dll")=0 Then InitErrorStr=InitErrorStr+ "steam_api.dll"+Chr(13)+Chr(10)
@@ -98,6 +118,9 @@ Function CheckForDlls()
 	
 	Local SteamResultCode% = Steam_Init()
 	If SteamResultCode <> 0 Then RuntimeError("Steam API failed to initialize! Error Code: " + SteamResultCode)
+	
+	gv\SteamIDUpper = Steam_GetPlayerIDUpper()
+	gv\SteamIDLower = Steam_GetPlayerIDLower()
 	
 End Function
 
@@ -122,6 +145,7 @@ Function InitOptions()
 	opt\GraphicHeight% = GetINIInt(gv\OptionFile, "options", "height", DesktopHeight())
 	opt\ShowFPS = GetINIInt(gv\OptionFile, "options", "show FPS", 0)
 	opt\DisplayMode% = GetINIInt(gv\OptionFile, "options", "display mode", 1)
+	opt\GraphicDriver% = GetINIInt(gv\OptionFile, "options", "graphic driver", 0)
 	opt\RenderCubeMapMode% = GetINIInt(gv\OptionFile, "options", "cubemaps", 2)
 	opt\EnableRoomLights% = GetINIInt(gv\OptionFile, "options", "room lights enabled", 1)
 	opt\TextureDetails% = GetINIInt(gv\OptionFile, "options", "texture details", 2)
@@ -135,6 +159,7 @@ Function InitOptions()
 	opt\MouseSmooth# = GetINIFloat(gv\OptionFile, "options", "mouse smoothing", 1.0)
 	opt\HoldToAim% = GetINIInt(gv\OptionFile, "options", "hold to aim", 1)
 	opt\HoldToCrouch% = GetINIInt(gv\OptionFile, "options", "hold to crouch", 1)
+	opt\ShowDisclaimers% = GetINIInt(gv\OptionFile, "options", "show disclaimers", 1)
 	
 	LoadResolutions()
 	

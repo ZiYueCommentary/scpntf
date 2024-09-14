@@ -35,7 +35,7 @@ Function LoadImage_Strict(file$)
 		
 		Return CopyImage(MenuBlack)
 	EndIf
-	BufferDirty ImageBuffer(tmp)
+	
 	Return tmp
 End Function
 
@@ -292,22 +292,20 @@ Function IsStreamPlaying_Strict(streamHandle%)
 End Function
 
 Function UpdateStreamSoundOrigin(streamHandle%,cam%,entity%,range#=10,volume#=1.0)
-	;Local st.Stream = Object.Stream(streamHandle)
-	range# = Max(range,1.0)
-	
-	If volume>0 Then
-		
-		Local dist# = EntityDistance(cam, entity) / range#
-		If 1 - dist# > 0 And 1 - dist# < 1 Then
+	If streamHandle <> 0 Then
+		range# = Max(range,1.0)
+		If volume>0 Then
 			
-			Local panvalue# = Sin(-DeltaYaw(cam,entity))
-			SetStreamVolume_Strict(streamHandle,volume#*(1-dist#)*opt\SFXVolume#)
-			SetStreamPan_Strict(streamHandle,panvalue)
+			Local dist# = EntityDistance(cam, entity) / range#
+			If 1 - dist# > 0 And 1 - dist# < 1 Then
+				
+				Local panvalue# = Sin(-DeltaYaw(cam,entity))
+				SetStreamVolume_Strict(streamHandle,volume#*(1-dist#)*opt\SFXVolume#)
+				SetStreamPan_Strict(streamHandle,panvalue)
+			Else
+				SetStreamVolume_Strict(streamHandle,0.0)
+			EndIf
 		Else
-			SetStreamVolume_Strict(streamHandle,0.0)
-		EndIf
-	Else
-		If streamHandle <> 0 Then
 			SetStreamVolume_Strict(streamHandle,0.0)
 		EndIf 
 	EndIf
@@ -380,6 +378,7 @@ Function LoadMesh_Strict(File$,parent=0)
 						If texture<>0
 							TextureBlend texture,5
 							BrushTexture b, texture, 0, 0
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							;Sometimes that error is intentional - such as if the mesh doesn't has a texture applied
 							;or an invalid one which gets fixed by something like EntityTexture
@@ -397,6 +396,7 @@ Function LoadMesh_Strict(File$,parent=0)
 						If texture<>0
 							TextureBlend texture,5
 							BrushTexture b, texture, 0, 1
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							;Sometimes that error is intentional - such as if the mesh doesn't has a texture applied
 							;or an invalid one which gets fixed by something like EntityTexture
@@ -431,6 +431,7 @@ Function LoadMesh_Strict(File$,parent=0)
 							TextureCoords texture,1
 							TextureBlend texture,2
 							BrushTexture b, texture, 0, 0
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							BrushTexture b, MissingTexture, 0, 0
 						EndIf
@@ -446,6 +447,7 @@ Function LoadMesh_Strict(File$,parent=0)
 							TextureCoords texture,0
 							TextureBlend texture,5
 							BrushTexture b, texture, 0, 1
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							BrushTexture b, MissingTexture, 0, 1
 						EndIf
@@ -461,6 +463,7 @@ Function LoadMesh_Strict(File$,parent=0)
 							TextureCoords texture,1
 							TextureBlend texture,2
 							BrushTexture b, texture, 0, 0
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							BrushTexture b, MissingTexture, 0, 0
 						EndIf
@@ -476,6 +479,7 @@ Function LoadMesh_Strict(File$,parent=0)
 							TextureCoords texture,0
 							TextureBlend texture,5
 							BrushTexture b, texture, 0, 2
+							DeleteSingleTextureEntryFromCache(texture)
 						Else
 							BrushTexture b, MissingTexture, 0, 2
 						EndIf
@@ -536,6 +540,7 @@ Function LoadAnimMesh_Strict(File$,parent=0)
 					texture = CheckForTexture(t1,texAlpha)
 					If texture<>0 Then
 						BrushTexture b, texture, 0, 0
+						DeleteSingleTextureEntryFromCache(texture)
 					Else
 						;Sometimes that error is intentional - such as if the mesh doesn't has a texture applied
 						;or an invalid one which gets fixed by something like EntityTexture
@@ -545,6 +550,7 @@ Function LoadAnimMesh_Strict(File$,parent=0)
 					texture = CheckForTexture(t1,texAlpha)
 					If texture<>0 Then
 						BrushTexture b, texture, 0, 1
+						DeleteSingleTextureEntryFromCache(texture)
 					Else
 						;Sometimes that error is intentional - such as if the mesh doesn't has a texture applied
 						;or an invalid one which gets fixed by something like EntityTexture
@@ -566,6 +572,15 @@ Function FreeEntity_Strict%(entity%)
 	
 	If entity <> 0 Then
 		FreeEntity entity
+	EndIf
+	
+	Return 0
+End Function
+
+Function FreeImage_Strict%(image%)
+	
+	If image <> 0 Then
+		FreeImage image
 	EndIf
 	
 	Return 0
@@ -617,6 +632,10 @@ Function LoadFont_Strict(file$, height%)
 	Return tmp
 End Function
 
+Function RuntimeError(message$)
+	CatchErrors(message)
+	MemoryAccessViolation()
+End Function
 
 
 

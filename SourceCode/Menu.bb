@@ -180,8 +180,8 @@ Function UpdateMainMenu()
 					FPSfactor = 0
 					
 					ResetInput()
-					
 					ResumeSounds()
+					DeleteTextureEntriesFromCache(0)
 					Return
 				EndIf
 			EndIf
@@ -716,9 +716,10 @@ Function UpdateMainMenu()
 					height = 390 * MenuScale
 					
 					y=y+25*MenuScale
-					ScreenGamma = (SlideBar(x + 310*MenuScale, y, 150*MenuScale, (ScreenGamma-0.5)*100.0,2,MainMenuTab,0,Upper(GetLocalString("Options", "low")),Upper(GetLocalString("Options", "high")))/100.0)+0.5
+					;TODO Fix ScreenGamma, which was broken with the addition of dgVoodoo
+					;ScreenGamma = (SlideBar(x + 310*MenuScale, y, 150*MenuScale, (ScreenGamma-0.5)*100.0,2,MainMenuTab,0,Upper(GetLocalString("Options", "low")),Upper(GetLocalString("Options", "high")))/100.0)+0.5
 					
-					y=y+35*MenuScale
+					;y=y+35*MenuScale
                     FOV = (SlideBar(x + 310*MenuScale, y,150*MenuScale, (FOV-40)*2.0,3,MainMenuTab,0,40,90)/2.0)+40
 					
 					y=y+35*MenuScale
@@ -860,7 +861,7 @@ Function UpdateMainMenu()
 						
 						y = y + 50*MenuScale
 						
-						If DrawButton(x+20*MenuScale,y,220*MenuScale,30*MenuScale,GetLocalString("Options", "controlcfg"),False) Then
+						If DrawButton(x+20*MenuScale,y,220*MenuScale,30*MenuScale,"Control configuration",False) Then
 							MainMenuTab = MenuTab_Options_ControlsBinding
 						EndIf	
 ;					Else
@@ -1049,13 +1050,13 @@ Function UpdateMainMenu()
 				width = 580 * MenuScale
 				height = 190 * MenuScale
 				
-				If DrawButton(x+20*MenuScale,y+20*MenuScale,width-40*MenuScale,70*MenuScale,GetLocalString("Menu", "credits"),2) Then
+				If DrawButton(x+20*MenuScale,y+20*MenuScale,width-40*MenuScale,70*MenuScale,"CREDITS",2) Then
 					LightSpriteTex[0] = LoadTexture_Strict("GFX\light1.jpg",1,0)
 					LightSpriteTex[2] = LoadTexture_Strict("GFX\lightsprite.jpg",1,0)
 					LoadMaterials("Data\materials.ini")
 					LoadCredits()
 				EndIf
-				If DrawButton(x+20*MenuScale,y+100*MenuScale,width-40*MenuScale,70*MenuScale,GetLocalString("Menu", "websites"),2) Then MainMenuTab = MenuTab_Websites
+				If DrawButton(x+20*MenuScale,y+100*MenuScale,width-40*MenuScale,70*MenuScale,"WEBSITES",2) Then MainMenuTab = MenuTab_Websites
 				;[End Block]
 			Case MenuTab_Achievements
 				;[Block]
@@ -1421,7 +1422,7 @@ Function UpdateMainMenu()
 						ShouldDeleteGadgets=True
 					EndIf
 					
-					If DrawButton(x + width * 0.3 + 280 * MenuScale, y + 300 * MenuScale, 150 * MenuScale, 40 * MenuScale, GetLocalString("Menu", "retry"), False, False, True) Then
+					If DrawButton(x + width * 0.3 + 280 * MenuScale, y + 300 * MenuScale, 150 * MenuScale, 40 * MenuScale, GetLocalString("Serverlist", "retry"), False, False, True) Then
 						mp_I\SelectedListServer = 0
 						mp_I\HasRefreshed = False
 						ShouldDeleteGadgets = True
@@ -1558,17 +1559,25 @@ Function UpdateMainMenu()
 					EndIf
 				EndIf
 				
-				If DrawButton(x+300*MenuScale, y+95*MenuScale, 170*MenuScale, 30*MenuScale, mp_O\Gamemode\name, False) Then
+				If DrawButton(x + 300*MenuScale, y + 95*MenuScale, 170*MenuScale, 30*MenuScale, mp_O\Gamemode\name, False) Then
+					MainMenuTab = MenuTab_SelectMPGamemode
+				EndIf
+				
+				If DrawButton(x + 470 * MenuScale, y + 95 * MenuScale, 30*MenuScale, 30*MenuScale, ">",False,False,True,3,MainMenuTab,1) Then
 					MainMenuTab = MenuTab_SelectMPGamemode
 				EndIf
 				
 				If mp_O\Gamemode\ID = Gamemode_Waves Then
-					If DrawButton(x + 470 * MenuScale, y + 95 * MenuScale, 30*MenuScale, 30*MenuScale, "...",False,False,True,3,MainMenuTab,1) Then
+					If DrawButton(x + 502 * MenuScale, y + 95 * MenuScale, 30*MenuScale, 30*MenuScale, "...",False,False,True,3,MainMenuTab,1) Then
 						MainMenuTab = MenuTab_MPGamemodeSettings
 					EndIf
 				EndIf
 				
-				If DrawButton(x+300*MenuScale, y+135*MenuScale, 170*MenuScale, 30*MenuScale, mp_O\MapInList\Name, False) Then
+				If DrawButton(x + 300*MenuScale, y + 135*MenuScale, 170*MenuScale, 30*MenuScale, mp_O\MapInList\Name, False) Then
+					MainMenuTab = MenuTab_SelectMPMap
+				EndIf
+				
+				If DrawButton(x + 470 * MenuScale, y + 135 * MenuScale, 30*MenuScale, 30*MenuScale, ">",False,False,True,3,MainMenuTab,1) Then
 					MainMenuTab = MenuTab_SelectMPMap
 				EndIf
 				
@@ -2097,17 +2106,19 @@ Function RenderMainMenu()
 				
 				If MainMenuTab = MenuTab_Options_Graphics Then
 					;[Block]
-					height = 400 * MenuScale
+					;TODO Fix ScreenGamma, which was broken with the addition of dgVoodoo
+					;height = 400 * MenuScale
+					height = 365 * MenuScale
 					DrawFrame(x, y, width, height)
 					
 					y=y+30*MenuScale
-					Color 255,255,255
-					Text(x + 20 * MenuScale, y, GetLocalString("Options","gamma")+":")
-					If MouseAndControllerSelectBox(x+300*MenuScale,y-6*MenuScale,170*MenuScale+14,20,6,MainMenuTab) And OnSliderID=0
-						DrawOptionsTooltip("gamma",ScreenGamma)
-					EndIf
+					;Color 255,255,255
+					;Text(x + 20 * MenuScale, y, GetLocalString("Options","gamma")+":")
+					;If MouseAndControllerSelectBox(x+300*MenuScale,y-6*MenuScale,170*MenuScale+14,20,6,MainMenuTab) And OnSliderID=0
+					;	DrawOptionsTooltip("gamma",ScreenGamma)
+					;EndIf
 					
-					y=y+35*MenuScale
+					;y=y+35*MenuScale
 					Color 255,255,255
 					Text(x + 20 * MenuScale, y, GetLocalString("Options","fov")+":")
 					If MouseOn(x+300*MenuScale,y-6*MenuScale,170*MenuScale+14,20)
@@ -2330,31 +2341,32 @@ Function RenderMainMenu()
 						;[End Block]
 				ElseIf MainMenuTab = MenuTab_Options_ControlsBinding Then
 					;[Block]
-					Text(x + 20 * MenuScale, y - 10 * MenuScale, GetLocalString("Options", "controlcfg")+": ")
+					x = x + 20 * MenuScale
+					Text(x, y - 10 * MenuScale, "Control configuration:")
 					y = y + 10 * MenuScale
 					
-					Text(x + 20 * MenuScale, y + 15 * MenuScale, GetLocalString("Options","cont_forward"))
-					Text(x + 20 * MenuScale, y + 35 * MenuScale, GetLocalString("Options","cont_back"))
-					Text(x + 20 * MenuScale, y + 55 * MenuScale, GetLocalString("Options","cont_left"))
-					Text(x + 20 * MenuScale, y + 75 * MenuScale, GetLocalString("Options","cont_right"))
-					Text(x + 20 * MenuScale, y + 95 * MenuScale, GetLocalString("Options","cont_crouch"))
-					Text(x + 20 * MenuScale, y + 115 * MenuScale, GetLocalString("Options","cont_sprint"))
+					Text(x, y + 15 * MenuScale, GetLocalString("Options","cont_forward"))
+					Text(x, y + 35 * MenuScale, GetLocalString("Options","cont_back"))
+					Text(x, y + 55 * MenuScale, GetLocalString("Options","cont_left"))
+					Text(x, y + 75 * MenuScale, GetLocalString("Options","cont_right"))
+					Text(x, y + 95 * MenuScale, GetLocalString("Options","cont_crouch"))
+					Text(x, y + 115 * MenuScale, GetLocalString("Options","cont_sprint"))
 					
-					Text(x + 20 * MenuScale, y + 155 * MenuScale, GetLocalString("Options","cont_holster"))
-					Text(x + 20 * MenuScale, y + 175 * MenuScale, GetLocalString("Options","cont_reload"))
+					Text(x, y + 155 * MenuScale, GetLocalString("Options","cont_holster"))
+					Text(x, y + 175 * MenuScale, GetLocalString("Options","cont_reload"))
 					
-					Text(x + 20 * MenuScale, y + 215 * MenuScale, GetLocalString("Options","cont_blink"))
-					Text(x + 20 * MenuScale, y + 235 * MenuScale, GetLocalString("Options","cont_inventory"))
-					Text(x + 20 * MenuScale, y + 255 * MenuScale, GetLocalString("Options","cont_interact"))
+					Text(x, y + 215 * MenuScale, GetLocalString("Options","cont_blink"))
+					Text(x, y + 235 * MenuScale, GetLocalString("Options","cont_inventory"))
+					Text(x, y + 255 * MenuScale, GetLocalString("Options","cont_interact"))
 					
-					Text(x + 20 * MenuScale, y + 295 * MenuScale, GetLocalString("Options","cont_chat"))
-					Text(x + 20 * MenuScale, y + 315 * MenuScale, GetLocalString("Options","cont_commandwheel"))
-					Text(x + 20 * MenuScale, y + 335 * MenuScale, GetLocalString("Options","cont_socialwheel"))
+					Text(x, y + 295 * MenuScale, GetLocalString("Options","cont_chat"))
+					Text(x, y + 315 * MenuScale, GetLocalString("Options","cont_commandwheel"))
+					Text(x, y + 335 * MenuScale, GetLocalString("Options","cont_socialwheel"))
 					
-					Text(x + 20 * MenuScale, y + 375 * MenuScale, GetLocalString("Options","cont_console"))
-					Text(x + 20 * MenuScale, y + 395 * MenuScale, GetLocalString("Options","cont_save"))
+					Text(x, y + 375 * MenuScale, GetLocalString("Options","cont_console"))
+					Text(x, y + 395 * MenuScale, GetLocalString("Options","cont_save"))
 					
-					If MouseOn(x+20*MenuScale,y,width-40*MenuScale,420*MenuScale)
+					If MouseOn(x,y,width-40*MenuScale,420*MenuScale)
 						DrawOptionsTooltip("controls")
 					EndIf
 					;[End Block]
@@ -2374,7 +2386,7 @@ Function RenderMainMenu()
 					y = y + 35*MenuScale
 					
 					Color 255,255,255
-					Text(x + 20 * MenuScale, y, GetLocalString("Options","showFPS")+":")
+					Text(x + 20 * MenuScale, y, GetLocalString("Options","showfps")+":")
 					If MouseAndControllerSelectBox(x+375*MenuScale,y-6*MenuScale,20*MenuScale,20*MenuScale,6,MainMenuTab)
 						DrawOptionsTooltip("showfps")
 					EndIf
@@ -2551,12 +2563,12 @@ Function RenderMainMenu()
 				
 				Color(255, 255, 255)
 				SetFont fo\Font[Font_Menu]
-				Text(x + width / 2, y + height / 2, GetLocalString("Menu", "websites"), True, True)
+				Text(x + width / 2, y + height / 2, "WEBSITES", True, True)
 				
 				x = 60 * MenuScale
 				y = y + height + 20 * MenuScale
 				width = 580 * MenuScale
-				height = 465 * MenuScale
+				height = 470 * MenuScale
 				
 				DrawFrame(x, y, width, height)
 				;[End Block]
@@ -2584,7 +2596,7 @@ Function RenderMainMenu()
 						Exit
 					EndIf
 				Next
-				height = 200 + (80 * temp) * MenuScale
+				height = 190 * MenuScale + (80 * temp) * MenuScale
 				
 				DrawFrame(x, y, width, height)
 				;[End Block]
@@ -2790,7 +2802,7 @@ Function RenderMainMenu()
 									Rect x+1*MenuScale,y+1*MenuScale,width-2*MenuScale,height-2*MenuScale
 								EndIf
 								Color 255,255,255
-								Text(x + width / 2, y + height / 2, "[" + se\region + "] " + se\name, True, True)
+								Text(x + width / 2, y + height / 2, Steam_FilterText(se\id_upper, se\id_lower, "[" + se\region + "] " + se\name), True, True)
 								x = x + width
 								width = 200 * MenuScale
 								DrawFrame(x, y, width, height, 0, 0, 1024, 1024, 1)
@@ -2799,7 +2811,7 @@ Function RenderMainMenu()
 									Rect x+1*MenuScale,y+1*MenuScale,width-2*MenuScale,height-2*MenuScale
 								EndIf
 								Color 255,255,255
-								Text(x + width / 2, y + height / 2,  se\gamemode, True, True)
+								Text(x + width / 2, y + height / 2, Steam_FilterText(se\id_upper, se\id_lower, se\gamemode), True, True)
 								x = x + width
 								width = 200 * MenuScale
 								DrawFrame(x, y, width, height, 0, 0, 1024, 1024, 1)
@@ -2808,7 +2820,7 @@ Function RenderMainMenu()
 									Rect x+1*MenuScale,y+1*MenuScale,width-2*MenuScale,height-2*MenuScale
 								EndIf
 								Color 255,255,255
-								Text(x + width / 2, y + height / 2, se\map, True, True)
+								Text(x + width / 2, y + height / 2, Steam_FilterText(se\id_upper, se\id_lower, se\map), True, True)
 								x = x + width
 								width = 150 * MenuScale
 								DrawFrame(x, y, width, height, 0, 0, 1024, 1024, 1)
@@ -2987,7 +2999,7 @@ Function RenderMainMenu()
 				
 				Color(255, 255, 255)
 				SetFont fo\Font[Font_Menu]
-				Text(x + width / 2, y + height / 2, GetLocalString("Multiplayer", "hostserver"), True, True)
+				Text(x + width / 2, y + height / 2, "HOST SERVER", True, True)
 				
 				x = 60 * MenuScale
 				y = y + height + 20 * MenuScale
@@ -2997,9 +3009,9 @@ Function RenderMainMenu()
 				
 				SetFont fo\Font[Font_Default]
 				
-				Text (x + 20 * MenuScale, y + 25 * MenuScale, GetLocalString("Multiplayer", "servername"))
+				Text (x + 20 * MenuScale, y + 25 * MenuScale, "Server name:")
 				
-				Text (x + 20 * MenuScale, y + 65 * MenuScale, GetLocalString("Multiplayer", "serverpwd"))
+				Text (x + 20 * MenuScale, y + 65 * MenuScale, "Password:")
 				
 				DrawImage mp_I\PasswordIcon, x + 470 * MenuScale, y + 55 * MenuScale, (mp_I\PasswordVisible)
 				If MouseOn(x + 470 * MenuScale, y + 55 * MenuScale, 30 * MenuScale, 30 * MenuScale) Then
@@ -3011,15 +3023,15 @@ Function RenderMainMenu()
 				
 				Color 255,255,255
 				
-				Text (x + 20 * MenuScale, y + 105 * MenuScale, GetLocalString("Multiplayer", "selemode"))
+				Text (x + 20 * MenuScale, y + 105 * MenuScale, "Selected gamemode:")
 				
-				Text (x + 20 * MenuScale, y + 145 * MenuScale, GetLocalString("Multiplayer", "selemap"))
+				Text (x + 20 * MenuScale, y + 145 * MenuScale, "Selected map:")
 				
-				Text (x + 20 * MenuScale, y + 185 * MenuScale, GetLocalString("Multiplayer", "maxplayer"))
+				Text (x + 20 * MenuScale, y + 185 * MenuScale, "Maximum players:")
 				
-				Text (x + 20 * MenuScale, y + 225 * MenuScale, GetLocalString("Multiplayer", "servertimeout"))
+				Text (x + 20 * MenuScale, y + 225 * MenuScale, "Server timeout (secs):")
 				
-				Text (x + 20 * MenuScale, y + 265 * MenuScale, GetLocalString("Multiplayer", "serverprivate"))
+				Text (x + 20 * MenuScale, y + 265 * MenuScale, "Private server:")
 				If MouseOn(x+375*MenuScale,y+260*MenuScale,20*MenuScale,20*MenuScale)
 					DrawOptionsTooltip("private")
 				EndIf
@@ -3034,7 +3046,7 @@ Function RenderMainMenu()
 				
 				Color(255, 255, 255)
 				SetFont fo\Font[Font_Menu]
-				Text(x + width / 2, y + height / 2, GetLocalString("Multiplayer", "selectmap"), True, True)
+				Text(x + width / 2, y + height / 2, "SELECT MAP", True, True)
 				
 				x = 60 * MenuScale
 				y = y + height + 20 * MenuScale
@@ -3067,7 +3079,7 @@ Function RenderMainMenu()
 				
 				Color(255, 255, 255)
 				SetFont fo\Font[Font_Menu_Medium]
-				Text(x + width / 2, y + height / 2, GetLocalString("Multiplayer", "selectmode"), True, True)
+				Text(x + width / 2, y + height / 2, "SELECT GAMEMODE", True, True)
 				
 				x = 60 * MenuScale
 				y = y + height + 20 * MenuScale
@@ -3113,7 +3125,7 @@ Function RenderMainMenu()
 				
 				Color(255, 255, 255)
 				SetFont fo\Font[Font_Menu_Medium]
-				Text(x + width / 2, y + height / 2, GetLocalString("Multiplayer", "modeoptions"), True, True)
+				Text(x + width / 2, y + height / 2, "GAMEMODE OPTIONS", True, True)
 				
 				x = 60 * MenuScale
 				y = y + height + 20 * MenuScale
@@ -3127,11 +3139,11 @@ Function RenderMainMenu()
 						height = 120 * MenuScale
 						DrawFrame(x, y, width, height)
 						
-						Text (x + 20 * MenuScale, y + 30 * MenuScale, GetLocalString("Multiplayer", "diff"))
+						Text (x + 20 * MenuScale, y + 30 * MenuScale, "Difficulty:")
 						
 						y=y+50*MenuScale
 						
-						Text (x + 20 * MenuScale, y + 30 * MenuScale, GetLocalString("Multiplayer", "wavesamount"))
+						Text (x + 20 * MenuScale, y + 30 * MenuScale, "Amount of waves:")
 						;[End Block]
 				End Select
 				;[End Block]
@@ -3338,7 +3350,7 @@ Function UpdateLauncher()
 	
 	BlinkMeterIMG% = LoadImage_Strict("GFX\blinkmeter.jpg")
 	
-	Local ChangeLogFile = OpenFile_Strict("changelog.txt")
+	Local ChangeLogFile = OpenFile("changelog.txt")
 	Local ChangeLogLineAmount% = 0
 	Local l$ = ""
 	Local chl.ChangeLogLines
@@ -3353,7 +3365,7 @@ Function UpdateLauncher()
 			If Left(l,5)<>"-----" Then
 				chl.ChangeLogLines = New ChangeLogLines
 				If Instr(l,"v"+VersionNumber)>0 Then
-					chl\txt = GetLocalString("Launcher", "update")+l
+					chl\txt = "NEW UPDATE: "+l
 				Else
 					chl\txt = l
 				EndIf
@@ -3367,7 +3379,8 @@ Function UpdateLauncher()
 	
 	Local UpdaterIMG% = CreateImage(400,445)
 	
-	AppTitle "SCP: Nine-Tailed Fox Launcher"
+	AppTitle AppTitleLauncher
+	CountGfxDrivers()
 	
 	Repeat
 		Local y = 0
@@ -3376,6 +3389,8 @@ Function UpdateLauncher()
 		
 		MouseHit1 = MouseHit(1)
 		MouseDown1 = MouseDown(1)
+		MousePosX = MouseX()
+		MousePosY = MouseY()
 		
 		Color 255, 255, 255
 		DrawImage(LauncherIMG, 0, 0)
@@ -3383,7 +3398,7 @@ Function UpdateLauncher()
 		If DrawButton(640 - 32, 0, 32, 32, "X", False, False, False) Then
 			PutINIValue(gv\OptionFile, "options", "width", currentWidth)
 			PutINIValue(gv\OptionFile, "options", "height", currentHeight)
-			PutINIValue(gv\OptionFile, "options", "display mode", opt\DisplayMode)
+			PutINIValue(gv\OptionFile, "options", "graphic driver", opt\GraphicDriver)
 			Steam_Shutdown()
 			End
 		EndIf
@@ -3426,27 +3441,27 @@ Function UpdateLauncher()
 		EndIf
 		
 		Color 255,255,255
-		Text(20, 130, GetLocalString("Launcher", "resolution") + ":")
-		DrawFrame(5, 150, 120, 30, 0, 0, 1024, 1024, FRAME_THICK, 512)
+		Text(80, 130, GetLocalString("Launcher", "resolution") + ":", True)
+		DrawFrame(5, 150, 120, 30)
 		Text(65, 165, currentWidth + "x" + currentHeight, True, True)
 		Local frameheight = 0
 		y = 0
+		
+		Local txt$
 		Select SelectedInputBox
 			Case 0 ;Every tab hidden
 				If DrawButton(120, 150, 30, 30, "▼", False, False, False) Then
 					SelectedInputBox = 1
 				EndIf
 				
-				Text(15, 200, GetLocalString("Launcher", "mode") + ":")
-				DrawFrame(5, 220, 120, 30, 0, 0, 1024, 1024, FRAME_THICK, 512)
-				Local txt$
-				Select opt\DisplayMode
-					Case 0
-						txt = GetLocalString("Launcher", "windowed")
-					Case 1
-						txt = GetLocalString("Launcher", "fullscreen")
-				End Select
-				Text(65, 235, txt, True, True)
+				Text(80, 200, GetLocalString("Launcher", "driver") + ":", True)
+				DrawFrame(5, 220, 120, 30)
+				If opt\GraphicDriver = 0 Then
+					txt = GetLocalString("Launcher", "primary_driver")
+				Else
+					txt = GfxDriverName(opt\GraphicDriver+1)
+				EndIf
+				Text(20, 235, LimitText(txt,10),False,True)
 				If DrawButton(120, 220, 30, 30, "▼", False, False, False) Then
 					SelectedInputBox = -1
 				EndIf
@@ -3455,20 +3470,28 @@ Function UpdateLauncher()
 					SelectedInputBox = 1
 				EndIf
 				
-				DrawFrame(5, 237, 145, 70, 0, 0, 1024, 1024, FRAME_THICK, 512)
-				For i = 0 To 1
-					Select i
-						Case 0
-							Text(5+(145/2),267+(20*i),GetLocalString("Launcher", "windowed"),True,True)
-						Case 1
-							Text(5+(145/2),267+(20*i),GetLocalString("Launcher", "fullscreen"),True,True)
-					End Select
-					If MouseOn(20,257+(20*i),113,20) Then
+				Local txt2$
+				For i = 0 To CountGfxDrivers()-1
+					If i = 0 Then
+						txt2 = GetLocalString("Launcher", "primary_driver")
+					ElseIf StringWidth(txt2) < StringWidth(GfxDriverName(i+1))
+						txt2 = GfxDriverName(i+1)
+					EndIf
+				Next
+				DrawFrame(5, 247, StringWidth(txt2)+30, 20*(i+1))
+				For i = 0 To CountGfxDrivers()-1
+					If i = 0 Then
+						txt2 = GetLocalString("Launcher", "primary_driver")
+					Else
+						txt2 = GfxDriverName(i+1)
+					EndIf
+					Text(20,267+(20*i),txt2,False,True)
+					If MouseOn(15,257+(20*i),StringWidth(txt2)+10,20) Then
 						Color 100,100,100
-						Rect(20,257+(20*i),113,20,False)
+						Rect(15,257+(20*i),StringWidth(txt2)+10,20,False)
 						Color 255,255,255
 						If MouseHit1 Then
-							opt\DisplayMode = i
+							opt\GraphicDriver = i
 							SelectedInputBox = 0
 							PlaySound_Strict ButtonSFX
 							Exit
@@ -3476,16 +3499,14 @@ Function UpdateLauncher()
 					EndIf
 				Next
 				
-				Text(15, 200, GetLocalString("Launcher", "mode")+":")
-				DrawFrame(5, 220, 120, 30, 0, 0, 1024, 1024, FRAME_THICK, 512)
-				txt$ = ""
-				Select opt\DisplayMode
-					Case 0
-						txt = GetLocalString("Launcher", "windowed")
-					Case 1
-						txt = GetLocalString("Launcher", "fullscreen")
-				End Select
-				Text(65, 235, txt,True,True)
+				Text(80, 200, GetLocalString("Launcher", "driver")+":", True)
+				DrawFrame(5, 220, 120, 30)
+				If opt\GraphicDriver = 0 Then
+					txt = GetLocalString("Launcher", "primary_driver")
+				Else
+					txt = GfxDriverName(opt\GraphicDriver+1)
+				EndIf
+				Text(20, 235, LimitText(txt,10),False,True)
 				
 				If DrawButton(120, 220, 30, 30, "▲", False, False, False) Then
 					SelectedInputBox = 0
@@ -3545,6 +3566,11 @@ Function UpdateLauncher()
 			opt\GraphicHeight = currentHeight
 			RealGraphicWidth = opt\GraphicWidth
 			RealGraphicHeight = opt\GraphicHeight
+			If opt\GraphicWidth = DesktopWidth() And opt\GraphicHeight = DesktopHeight() Then
+				opt\DisplayMode = 1
+			Else
+				opt\DisplayMode = 0
+			EndIf
 			Exit
 		EndIf
 		Flip
@@ -3552,7 +3578,7 @@ Function UpdateLauncher()
 	
 	PutINIValue(gv\OptionFile, "options", "width", opt\GraphicWidth)
 	PutINIValue(gv\OptionFile, "options", "height", opt\GraphicHeight)
-	PutINIValue(gv\OptionFile, "options", "display mode", opt\DisplayMode)
+	PutINIValue(gv\OptionFile, "options", "graphic driver", opt\GraphicDriver)
 	
 	DeleteMenuImages()
 	
@@ -3564,6 +3590,9 @@ Function UpdateLauncher()
 	ScrollBarY2 = 0
 	ScrollMenuHeight = 0
 	ScrollMenuHeight2 = 0
+	
+	EndGraphics()
+	Delay 10
 	
 End Function
 
@@ -3586,20 +3615,25 @@ Function IsResolutionHeightValid%(height%)
 End Function
 
 Function DrawTiledImageRect(img%, srcX%, srcY%, srcwidth#, srcheight#, x%, y%, width%, height%)
-	Local srcwidth_orig = srcwidth
-	Local srcheight_orig = srcheight
 	
+	Local TempSrcWidth%, TempSrcHeight%
 	Local x2% = x
-	While x2 < x+width
-		Local y2% = y
-		While y2 < y+height
-			If x2 + srcwidth > x + width Then srcwidth = srcwidth - Max((x2 + srcwidth) - (x + width), 1)
-			If y2 + srcheight > y + height Then srcheight = srcheight - Max((y2 + srcheight) - (y + height), 1)
-			DrawBlockRect(img, x2, y2, srcX, srcY, srcwidth, srcheight)
-			y2 = y2 + srcheight_orig
-		Wend
-		x2 = x2 + srcwidth_orig
-	Wend
+	
+    While x2 < x + width
+        TempSrcWidth = srcwidth
+        If x2 + srcwidth > x + width Then TempSrcWidth = (x + width) - x2
+        
+        Local y2% = y
+		
+        While y2 < y + height
+            TempSrcHeight = srcheight
+            If y2 + srcheight > y + height Then TempSrcHeight = (y + height) - y2
+            
+            DrawBlockRect(img, x2, y2, srcX, srcY, TempSrcWidth, TempSrcHeight)
+            y2 = y2 + TempSrcHeight
+        Wend
+        x2 = x2 + TempSrcWidth
+    Wend
 	
 End Function
 
@@ -3731,11 +3765,11 @@ End Function
 
 Const FRAME_THICK = 3
 
-Function DrawFrame(x%, y%, width%, height%, xoffset%=0, yoffset%=0, srcwidth% = 1024, srcheight% = 1024, frameoffset%=FRAME_THICK, tile%=256)
+Function DrawFrame(x%, y%, width%, height%, xoffset%=0, yoffset%=0, srcwidth% = 1024, srcheight% = 1024, frameoffset%=FRAME_THICK)
 	Color 255, 255, 255
-	DrawTiledImageRect(MenuWhite, xoffset, (y Mod tile), srcwidth%, srcheight%, x, y, width, height)
+	DrawTiledImageRect(MenuWhite, xoffset, 0, srcwidth%, srcheight%, x, y, width, height)
 	
-	DrawTiledImageRect(MenuBlack, yoffset, (y Mod tile), srcwidth%, srcheight%, x+frameoffset*MenuScale, y+frameoffset*MenuScale, width-(frameoffset*2)*MenuScale, height-(frameoffset*2)*MenuScale)	
+	DrawTiledImageRect(MenuBlack, yoffset, 0, srcwidth%, srcheight%, x+frameoffset*MenuScale, y+frameoffset*MenuScale, width-(frameoffset*2)*MenuScale, height-(frameoffset*2)*MenuScale)	
 End Function
 
 Function DrawButton%(x%, y%, width%, height%, txt$, bigfont% = True, waitForMouseUp%=False, usingAA%=True, currButton%=-1, currButtonTab%=0, currButtonSub%=0)
@@ -3931,8 +3965,6 @@ Function SlideBar#(x%, y%, width%, value#, currButton%=-1, currButtonTab%=0, cur
 	Local currSlideBar.MenuSlideBar
 	Local msb.MenuSlideBar
 	Local buttonexists%=False
-	txtlow = GetLocalString("Options", "low")
-	txthigh = GetLocalString("Options", "high")
 	For msb = Each MenuSlideBar
 		If msb\x=x And msb\y=y And msb\width=width
 			buttonexists=True
@@ -3984,8 +4016,7 @@ Function RowText(A$, X, Y, W, H, align% = 0, Leading#=1)
 	Local b$
 	
 	While Len(A) > 0
-		Local space
-		space = Instr(A$, "")
+		Local space = Instr(A$, " ")
 		If space = 0 Then space = Len(A$)
 		Local temp$ = Left(A$, space)
 		Local trimmed$ = Trim(temp) ;we might ignore a final space 
@@ -4034,8 +4065,7 @@ Function GetLineAmount(A$, W, H, Leading#=1)
 	Local b$
 	
 	While Len(A) > 0
-		Local space
-		If Upper(I_Loc\Lang) = "SCHINESE" Then space = Instr(A$, "") Else space = Instr(A$, " ")
+		Local space = Instr(A$, " ")
 		If space = 0 Then space = Len(A$)
 		Local temp$ = Left(A$, space)
 		Local trimmed$ = Trim(temp) ;we might ignore a final space 
@@ -4063,16 +4093,9 @@ Function GetLineAmount(A$, W, H, Leading#=1)
 End Function
 
 Function LimitText$(txt$,width%)
-	Local TextLength%, UnFitting%, LetterWidth%
 	If txt = "" Lor width = 0 Then Return ""
-	TextLength = StringWidth(txt)
-	UnFitting = TextLength - width*FontWidth()
-	If UnFitting <= 0 Then
-		Return txt
-	Else
-		LetterWidth = TextLength / Len(txt)
-		Return (Left(txt, Max(Len(txt) - UnFitting / (LetterWidth - 4), 1)) + "...")
-	EndIf
+	If Len(txt) <= width Then  Return txt
+	Return (Left(txt, width-Min(Len(txt)-width,3)) + "...")
 End Function
 
 Function DrawTooltip(message$)
@@ -4130,7 +4153,6 @@ Function DrawOptionsTooltip(option$,value#=0,ingame%=False)
 	Local lines% = 0, lines2% = 0
 	Local txt$ = ""
 	Local txt2$ = "", R% = 0, G% = 0, B% = 0
-	Local usetestimg% = False, extraspace% = 0
 	
 	SetFont fo\Font[Font_Default]
 	Color 255,255,255
@@ -4236,7 +4258,7 @@ Function DrawOptionsTooltip(option$,value#=0,ingame%=False)
 			B = 255
 			txt2 = GetLocalStringR("Options", "currentval", Int(value*100))+"% "+GetLocalStringR("Options", "defaultval",Int(100))
 		Case "controls"
-			txt = GetLocalString("Options", "controlcfgtxt")
+			txt = "Configure the in-game control scheme."
 		Case "controller"
 			txt = "Enables/Disables controller support."
 			If value=1
@@ -4268,32 +4290,22 @@ Function DrawOptionsTooltip(option$,value#=0,ingame%=False)
 		;Multiplayer options
 			;[Block]
 		Case "private"
-			txt = GetLocalString("Options", "privatetxt")
+			txt = "Use this to make your server hidden from the server list."
 			;[End Block]
 	End Select
 	
 	lines% = GetLineAmount(txt,fw,fh)
-	If usetestimg
-		extraspace = 210*MenuScale
-	EndIf
+	
 	If txt2$ = ""
-		DrawFrame(x,y,width,((StringHeight(txt)*lines)+(10+lines)*MenuScale)+extraspace)
+		DrawFrame(x,y,width,((StringHeight(txt)*lines)+(10+lines)*MenuScale))
 	Else
 		lines2% = GetLineAmount(txt2,fw,fh)
-		DrawFrame(x,y,width,(((StringHeight(txt)*lines)+(10+lines)*MenuScale)+(StringHeight(txt2)*lines2)+(10+lines2)*MenuScale)+extraspace)
+		DrawFrame(x,y,width,(((StringHeight(txt)*lines)+(10+lines)*MenuScale)+(StringHeight(txt2)*lines2)+(10+lines2)*MenuScale))
 	EndIf
 	RowText(txt,fx,fy,fw,fh)
 	If txt2$ <> ""
 		Color R,G,B
 		RowText(txt2,fx,(fy+(StringHeight(txt)*lines)+(5+lines)*MenuScale),fw,fh)
-	EndIf
-	If usetestimg
-		MidHandle Menu_TestIMG
-		If txt2$ = ""
-			DrawImage Menu_TestIMG,x+(width/2),y+100*MenuScale+((StringHeight(txt)*lines)+(10+lines)*MenuScale)
-		Else
-			DrawImage Menu_TestIMG,x+(width/2),y+100*MenuScale+(((StringHeight(txt)*lines)+(10+lines)*MenuScale)+(StringHeight(txt2)*lines2)+(10+lines2)*MenuScale)
-		EndIf
 	EndIf
 	
 End Function

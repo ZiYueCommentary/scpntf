@@ -5,6 +5,7 @@
 Const MaxMenu3DStates = 5
 Const MaxMenu3DObjects = 24
 Const MaxMenu3DRenderingObjects = 4
+Const MenuRoomScale# = RoomScale
 ;[End Block]
 
 Type Menu3DInstance
@@ -47,6 +48,9 @@ Function MainLoopMenu()
 	While (ft\accumulator>0.0)
 		ft\accumulator = ft\accumulator-GetTickDuration()
 		If (ft\accumulator<=0.0) Then CaptureWorld()
+		
+		MousePosX = MouseX()
+		MousePosY = MouseY()
 		
 		If Input_ResetTime>0
 			Input_ResetTime = Max(Input_ResetTime-FPSfactor,0.0)
@@ -1249,20 +1253,6 @@ Function Update3DMenu()
 				
 				p\Achange = -0.016
 			Next
-			
-			If m3d\State[0]=0 Then
-				If m3d\State[1]<0.5 Then
-					m3d\State[1]=Min(m3d\State[1]+0.0025*FPSfactor,0.5)
-				Else
-					m3d\State[0]=1
-				EndIf
-			Else
-				If m3d\State[1]>0.0 Then
-					m3d\State[1]=Max(m3d\State[1]-0.0025*FPSfactor,0.0)
-				Else
-					m3d\State[0]=0
-				EndIf
-			EndIf
 			
 			PositionEntity m3d\Pivot,-0.0,0.3,-2.5+m3d\State[1]
 			RotateEntity m3d\Pivot,-10,0,0

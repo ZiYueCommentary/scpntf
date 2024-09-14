@@ -52,6 +52,8 @@ Function SaveGame(file$, newzone%=-1)
 	WriteInt f, BlurTimer
 	WriteFloat f, HealTimer
 	
+	WriteByte f, gopt\GameMode + 1
+	
 	For g = Each Guns
 		WriteInt f, g\CurrAmmo
 		WriteInt f, g\CurrReloadAmmo
@@ -696,6 +698,8 @@ Function LoadPlayerData(file$, f%)
 	BlurTimer = ReadInt(f)	
 	HealTimer = ReadFloat(f)
 	
+	gopt\GameMode = ReadByte(f) - 1
+	
 	For g = Each Guns
 		g\CurrAmmo = ReadInt(f)
 		g\CurrReloadAmmo = ReadInt(f)
@@ -909,7 +913,7 @@ Function LoadPlayerData(file$, f%)
 		
 		Local frame# = ReadFloat(f)
 		Select NPCtype
-			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2
+			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2, NPCtype939
 				SetAnimTime(n\obj, frame)
 		End Select
 		
@@ -1127,7 +1131,7 @@ Function LoadGame(file$, zoneToLoad%=-1)
 		
 		Local frame# = ReadFloat(f)
 		Select NPCtype
-			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2
+			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2, NPCtype939
 				SetAnimTime(n\obj, frame)
 		End Select
 		
@@ -1675,7 +1679,7 @@ Function LoadGame(file$, zoneToLoad%=-1)
 	PlayerNewElevator = ReadByte(f)
 	
 	For do.Doors = Each Doors
-		If do\room <> Null Then
+		If do\room = Null Then
 			dist# = 20.0
 			Local closestroom.Rooms
 			For r.Rooms = Each Rooms
@@ -1806,17 +1810,6 @@ Function LoadGame(file$, zoneToLoad%=-1)
 		Next
 	EndIf
 	
-	If Collider <> 0 Then
-		If PlayerRoom<>Null Then
-			ShowEntity PlayerRoom\obj
-		EndIf
-		ShowEntity Collider
-		TeleportEntity(Collider,EntityX(Collider),EntityY(Collider)+0.5,EntityZ(Collider),0.3,True)
-		If PlayerRoom<>Null Then
-			HideEntity PlayerRoom\obj
-		EndIf
-	EndIf
-	
 	UpdateDoorsTimer = 0
 	
 	CatchErrors("Uncaught (LoadGame(" + file + "))")
@@ -1838,9 +1831,6 @@ Function LoadGameQuick(file$)
 	Msg = ""
 	SelectedEnding = ""
 	
-	PositionEntity Collider,0,1000.0,0,True
-	ResetEntity Collider
-	
 	Local x#, y#, z#, i%, j%, temp%, temp2%, strtemp$, id%, tex%, dist#, dist2#
 	Local player_x#,player_y#,player_z#, r.Rooms, n.NPCs, do.Doors, g.Guns, itt.ItemTemplates, it2.Items, n2.NPCs, it.Items, em.Emitters, fb.FuseBox, ne.NewElevator
 	Local f% = ReadFile(file + "main.ntf")
@@ -1849,7 +1839,7 @@ Function LoadGameQuick(file$)
 	strtemp = ReadString(f)
 	strtemp = ReadString(f)
 	
-	DropSpeed = -0.1
+	DropSpeed = 0.0
 	HeadDropSpeed = 0.0
 	Shake = 0
 	CurrSpeed = 0
@@ -1870,9 +1860,7 @@ Function LoadGameQuick(file$)
 	
 	PlayTime = ReadInt(f)
 	
-	;HideEntity Head
 	HideEntity Collider
-	
 	x = ReadFloat(f)
 	y = ReadFloat(f)
 	z = ReadFloat(f)
@@ -1972,7 +1960,7 @@ Function LoadGameQuick(file$)
 		
 		Local frame# = ReadFloat(f)
 		Select NPCtype
-			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2
+			Case NPCtypeOldMan, NPCtypeD, NPCtype096, NPCtypeMTF, NPCtypeGuard, NPCtype049, NPCtypeZombie, NPCtypeClerk, NPCtypeD2, NPCtype939
 				SetAnimTime(n\obj, frame)
 		End Select		
 		
@@ -2393,7 +2381,7 @@ Function LoadGameQuick(file$)
 	PlayerNewElevator = ReadByte(f)
 	
 	For do.Doors = Each Doors
-		If do\room <> Null Then
+		If do\room = Null Then
 			dist# = 20.0
 			Local closestroom.Rooms
 			For r.Rooms = Each Rooms
@@ -2423,17 +2411,6 @@ Function LoadGameQuick(file$)
 	;EndIf
 	
 	CloseFile f
-	
-	If Collider <> 0 Then
-		If PlayerRoom<>Null Then
-			ShowEntity PlayerRoom\obj
-		EndIf
-		ShowEntity Collider
-		TeleportEntity(Collider,EntityX(Collider),EntityY(Collider)+0.5,EntityZ(Collider),0.3,True)
-		If PlayerRoom<>Null Then
-			HideEntity PlayerRoom\obj
-		EndIf
-	EndIf
 	
 	UpdateDoorsTimer = 0
 	

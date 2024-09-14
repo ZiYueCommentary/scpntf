@@ -1438,12 +1438,11 @@ Function CreateNewElevator.NewElevator(obj%,currfloor%,door.Doors,id#,r.Rooms,fl
 End Function
 
 Function StartNewElevator(door.Doors,newfloor%)
-	Local ne.NewElevator, ne_found.NewElevator
+	Local ne.NewElevator
 	Local playerinside% = False
 	
 	For ne = Each NewElevator
 		If ne\door = door
-			ne_found = ne
 			Exit
 		EndIf
 	Next
@@ -1626,6 +1625,7 @@ Function UpdateNewElevators()
 				ne\state = ne\state + FPSfactor
 			ElseIf ne\state >= 100.0 Then
 				UseDoor(ne\door)
+				PlayerNewElevator = 0
 				PlayerInNewElevator = False
 				ne\state = 0.0
 			EndIf
@@ -1637,6 +1637,26 @@ Function UpdateNewElevators()
 		EndIf
 	Next
 	
+End Function
+
+Function ResetNewElevator(ne.NewElevator, default_floor% = 1)
+	If ne <> Null Then
+		If PlayerNewElevator = ne\ID Then
+			PlayerNewElevator = 0
+			PlayerInNewElevator = False
+		EndIf
+		ne\state = 0.0
+		ne\currfloor = default_floor
+		ne\tofloor = default_floor
+		ne\door\open = True
+		PositionEntity ne\obj,EntityX(ne\obj),ne\floory[default_floor-1],EntityZ(ne\obj)
+		PositionEntity ne\door\frameobj,EntityX(ne\door\frameobj),EntityY(ne\obj,True),EntityZ(ne\door\frameobj)
+		PositionEntity ne\door\obj,EntityX(ne\door\obj),EntityY(ne\obj,True),EntityZ(ne\door\obj)
+		PositionEntity ne\door\obj2,EntityX(ne\door\obj2),EntityY(ne\obj,True),EntityZ(ne\door\obj2)
+		PositionEntity ne\door\buttons[0],EntityX(ne\door\buttons[0]),EntityY(ne\obj,True)+0.6,EntityZ(ne\door\buttons[0])
+		PositionEntity ne\door\buttons[1],EntityX(ne\door\buttons[1]),EntityY(ne\obj,True)+0.7,EntityZ(ne\door\buttons[1])
+		StopStream_Strict(ne\soundchn)
+	EndIf
 End Function
 
 Function DeleteNewElevators()
@@ -2535,22 +2555,24 @@ Function TextWithAlign%(x%, y%, txt$, xAlign% = 0, yAlign% = 0)
 	
 End Function
 
-Function MaskTexture(Texture%, Red, Green, Blue)
-	Local x%,y%,Pixel
-    Local MaskColor = (Red Shl 16) Or (Green Shl 8) Or Blue
-    Local MaskSizeX% = TextureWidth(Texture)
-    Local MaskSizeY% = TextureHeight(Texture)
-    Local MaskBuffer = TextureBuffer(Texture)
-    LockBuffer(MaskBuffer)
-    For x = 0 To MaskSizeX
-        For y = 0 To MaskSizeY
-            Pixel = ReadPixel(x, y, MaskBuffer) And $00FFFFFF
-            If (Pixel = MaskColor) Then
-                WritePixel(x, y, Pixel, MaskBuffer)
-            EndIf
-        Next
-    Next
-    UnlockBuffer(MaskBuffer)
+Function MaskTexture(texture%, red%, green%, blue%) 
+	Local x%,y%,pixel%
+	Local maskColor% = (red Shl 16) Or (green Shl 8) Or blue 
+	Local maskSizeX% = TextureWidth(texture) 
+	Local maskSizeY% = TextureHeight(texture) 
+	Local maskBuffer% = TextureBuffer(texture) 
+	LockBuffer(maskBuffer) 
+	For x = 0 To maskSizeX-1 
+		For y = 0 To maskSizeY-1 
+			pixel = ReadPixel(x, y, maskBuffer) And $00FFFFFF 
+			If (pixel = maskColor) Then 
+				WritePixel(x, y, pixel, maskBuffer) 
+			Else 
+				WritePixel(x, y, pixel Or $FF000000, maskBuffer) 
+			EndIf 
+		Next 
+	Next 
+	UnlockBuffer(maskBuffer) 
 End Function
 
 

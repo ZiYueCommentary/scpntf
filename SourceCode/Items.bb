@@ -9,6 +9,8 @@ Global ClosestItem.Items
 
 Global LastItemID%
 
+Const ItemDistanceCheckTime# = 35.0
+
 Type ItemTemplates
 	Field name$
 	Field tempname$
@@ -20,7 +22,7 @@ Type ItemTemplates
 	Field obj%, objpath$, parentobjpath$
 	Field invimg%,invimg2%,invimgpath$
 	Field imgpath$, img%
-	
+	Field imgwidth%, imgheight%
 	Field isAnim%
 	
 	Field scale#
@@ -185,7 +187,7 @@ Function InitItemTemplates()
 	it = CreateItemTemplate("Nuclear Device Document", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\docNDP.jpg", 0.003) : it\sound = 0	
 	it = CreateItemTemplate("Class D Orientation Leaflet", "paper", "GFX\items\paper.x", "GFX\items\INVpaper.jpg", "GFX\items\docORI.jpg", 0.003) : it\sound = 0	
 	
-	it = CreateItemTemplate("Note from Daniel", "paper", "GFX\items\paper.x", "GFX\items\INVnote.jpg", "GFX\items\docdan.jpg", 0.0025, "GFX\items\notetexture.jpg") : it\sound = 0			
+	it = CreateItemTemplate("Note from Daniel", "paper", "GFX\items\note.x", "GFX\items\INVnote2.jpg", "GFX\items\docdan.jpg", 0.0025) : it\sound = 0			
 	
 	it = CreateItemTemplate("Burnt Note", "paper", "GFX\items\paper.x", "GFX\items\INVbn.jpg", "GFX\items\bn.it", 0.003, "GFX\items\BurntNoteTexture.jpg")
 	it\img = BurntNote : it\sound = 0
@@ -404,7 +406,7 @@ Function CreateItem.Items(name$, tempname$, x#, y#, z#, r%=0,g%=0,b%=0,a#=1.0,in
 	tempname = Lower (tempname)
 	
 	For it.ItemTemplates = Each ItemTemplates
-		If Lower(it\name) = name Then
+		If Lower(it\name) = name Lor name = "" Then
 			If Lower(it\tempname) = tempname Then
 				i\itemtemplate = it
 				i\collider = CreatePivot()
@@ -525,10 +527,11 @@ Function UpdateItems()
 		i\Dropped = 0
 		
 		If (Not i\Picked) Then
-			If i\disttimer < MilliSecs() Then
+			If i\disttimer <= 0.0 Then
 				i\dist = EntityDistance(Camera, i\collider)
-				i\disttimer = MilliSecs() + 700
-				If i\dist < HideDist Then ShowEntity i\collider
+				i\disttimer = ItemDistanceCheckTime
+			Else
+				i\disttimer = Max(0.0, i\disttimer - FPSfactor)
 			EndIf
 			
 			If i\dist < HideDist Then
@@ -637,51 +640,37 @@ Function PickItem(item.Items)
 							SetAnimTime item\model,19.0
 						Case "1123"
 							If Not (Wearing714 = 1) Then
-								If PlayerRoom\RoomTemplate\Name <> "room1123" Then
+								If PlayerRoom\RoomTemplate\Name <> "cont_1123" Then
 									LightFlash = 7
 									PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))		
-									DeathMSG = Designation+" was shot dead after attempting to attack a member of Nine-Tailed Fox. Surveillance tapes show that the subject had been "
-									DeathMSG = DeathMSG + "wandering around the site approximately 9 minutes prior, shouting the phrase " + Chr(34) + "get rid of the four pests" + Chr(34)
-									DeathMSG = DeathMSG + " in chinese. SCP-1123 was found in [REDACTED] nearby, suggesting the subject had come into physical contact with it. How "
-									DeathMSG = DeathMSG + "exactly SCP-1123 was removed from its containment chamber is still unknown."
+									DeathMSG = GetLocalStringR("Singleplayer", "cont_1123_death", Designation)
 									Kill()
+									Return
 								EndIf
 								For e.Events = Each Events
-									If e\EventName = "room1123" Then 
+									If e\EventName = "cont_1123" Then 
 										If e\EventState = 0 Then
 											LightFlash = 3
 											PlaySound_Strict(LoadTempSound("SFX\SCP\1123\Touch.ogg"))
 										EndIf
 										e\EventState = Max(1, e\EventState)
-										
 										Exit
 									EndIf
 								Next
 							EndIf
-							
-							Return
 						Case "killbat"
 							LightFlash = 1.0
 							PlaySound_Strict(IntroSFX[2])
 							DeathMSG = Designation+" found dead inside SCP-914's output booth next to what appears to be an ordinary nine-volt battery. The subject is covered in severe "
 							DeathMSG = DeathMSG + "electrical burns, and assumed to be killed via an electrical shock caused by the battery. The battery has been stored for further study."
 							Kill()
-;						Case "scp148"
-;							GiveAchievement(Achv148)	
-;						Case "scp513"
-;							GiveAchievement(Achv513)
-;						Case "scp860"
-;							GiveAchievement(Achv860)
-;						Case "key6"
-;							GiveAchievement(AchvOmni)
+							Return
 						Case "veryfinevest"
 							Msg = "The vest is too heavy to pick up."
 							MsgTimer = 70*6
 							Exit
 						Case "firstaid", "finefirstaid", "veryfinefirstaid", "firstaid2"
 							item\state = 0
-						Case "navigator", "nav"
-							If item\itemtemplate\name = "S-NAV Navigator Ultimate" Then GiveAchievement(AchvSNAV)
 						Case "hazmatsuit", "hazmatsuit2", "hazmatsuit3"
 							Msg = "You put on the hazmat suit."
 							TakeOffStuff(1+16)
