@@ -4016,7 +4016,7 @@ Function RowText(A$, X, Y, W, H, align% = 0, Leading#=1)
 	Local b$
 	
 	While Len(A) > 0
-		Local space = Instr(A$, " ")
+		Local space = Instr(A$, "")
 		If space = 0 Then space = Len(A$)
 		Local temp$ = Left(A$, space)
 		Local trimmed$ = Trim(temp) ;we might ignore a final space 
@@ -4065,7 +4065,7 @@ Function GetLineAmount(A$, W, H, Leading#=1)
 	Local b$
 	
 	While Len(A) > 0
-		Local space = Instr(A$, " ")
+		Local space = Instr(A$, "")
 		If space = 0 Then space = Len(A$)
 		Local temp$ = Left(A$, space)
 		Local trimmed$ = Trim(temp) ;we might ignore a final space 

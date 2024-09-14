@@ -81,7 +81,7 @@ Function UpdateLang(Lang$)
 	InitFonts()
 End Function
 
-UpdateLang(Steam_GetCurrentGameLang())
+UpdateLang("schinese")
 
 Function SetLocalString(Section$, Parameter$)
 	IniWriteString(I_Loc\LangPath + "Data\local.ini", Section, Parameter, GetLocalString(Section, Parameter), 1) ;need to set the value first, otherwise it is being set to itself
